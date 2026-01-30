@@ -1,0 +1,214 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  
+}
+
+model Session {
+  id            String    @id
+  shop          String
+  state         String
+  isOnline      Boolean   @default(false)
+  scope         String?
+  expires       DateTime?
+  accessToken   String
+  userId        BigInt?
+  firstName     String?
+  lastName      String?
+  email         String?
+  accountOwner  Boolean   @default(false)
+  locale        String?
+  collaborator  Boolean?  @default(false)
+  emailVerified Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+model Shop {
+  id            String   @id @default(cuid())
+  shopDomain    String   @unique
+  accessToken   String
+  installedAt   DateTime @default(now())
+
+  videos        Video[]
+  playlists     Playlist[]
+  themeSettings ThemeSettings?
+  subscription  BillingSubscription?
+  usage         UsageMetrics?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+////////////////////
+// VIDEOS
+////////////////////
+model Video {
+  id            String   @id @default(cuid())
+  shopId        String
+  shop          Shop     @relation(fields: [shopId], references: [id])
+
+  title         String?
+  description   String?
+  duration      Int?     // seconds
+  status        VideoStatus @default(PROCESSING)
+
+  originalUrl   String
+  thumbnailUrl  String?
+
+  assets        VideoAsset[]
+  productTags   VideoProductTag[]
+  analytics     VideoAnalytics?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model VideoAsset {
+  id        String   @id @default(cuid())
+  videoId  String
+  video    Video    @relation(fields: [videoId], references: [id])
+
+  resolution String  // e.g. 720p, 1080p
+  format     String  // mp4, webm
+  url        String
+
+  createdAt DateTime @default(now())
+}
+
+////////////////////
+// PLAYLISTS
+////////////////////
+model Playlist {
+  id          String   @id @default(cuid())
+  shopId      String
+  shop        Shop     @relation(fields: [shopId], references: [id])
+
+  name        String
+  isPublished Boolean  @default(false)
+
+  videos      PlaylistVideo[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PlaylistVideo {
+  id          String   @id @default(cuid())
+  playlistId String
+  videoId    String
+
+  playlist   Playlist @relation(fields: [playlistId], references: [id])
+  video      Video    @relation(fields: [videoId], references: [id])
+
+  position   Int      // drag-and-drop order
+}
+
+////////////////////
+// PRODUCT TAGGING
+////////////////////
+model VideoProductTag {
+  id              String @id @default(cuid())
+  videoId         String
+  video           Video  @relation(fields: [videoId], references: [id])
+
+  shopifyProductId String
+  shopifyVariantId String?
+
+  createdAt       DateTime @default(now())
+}
+
+////////////////////
+// ANALYTICS
+////////////////////
+model VideoAnalytics {
+  id          String  @id @default(cuid())
+  videoId    String  @unique
+  video      Video   @relation(fields: [videoId], references: [id])
+
+  impressions Int    @default(0)
+  plays       Int    @default(0)
+  productClicks Int  @default(0)
+  revenue     Float  @default(0)
+
+  updatedAt   DateTime @updatedAt
+}
+
+////////////////////
+// THEME CUSTOMIZATION
+////////////////////
+model ThemeSettings {
+  id              String @id @default(cuid())
+  shopId          String @unique
+  shop            Shop   @relation(fields: [shopId], references: [id])
+
+  primaryColor    String
+  secondaryColor  String
+  fontFamily      String
+  buttonStyle     String
+  modalBackground String
+
+  autoplay        Boolean @default(true)
+  autoplayMode    AutoplayMode @default(VIEWPORT)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+////////////////////
+// BILLING
+////////////////////
+model BillingSubscription {
+  id              String @id @default(cuid())
+  shopId          String @unique
+  shop            Shop   @relation(fields: [shopId], references: [id])
+
+  planName        String
+  status          SubscriptionStatus
+  shopifyChargeId String?
+
+  currentPeriodEnd DateTime
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+////////////////////
+// USAGE / LIMITS
+////////////////////
+model UsageMetrics {
+  id            String @id @default(cuid())
+  shopId        String @unique
+  shop          Shop   @relation(fields: [shopId], references: [id])
+
+  monthlyViews  Int    @default(0)
+  viewLimit     Int    @default(10000)
+
+  resetAt       DateTime
+
+  updatedAt     DateTime @updatedAt
+}
+
+////////////////////
+// ENUMS
+////////////////////
+enum VideoStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum AutoplayMode {
+  VIEWPORT
+  HOVER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAUSED
+  CANCELLED
+}
