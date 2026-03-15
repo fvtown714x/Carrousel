@@ -1,38 +1,38 @@
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "sqlite"
-  
+  url = env("DATABASE_URL")
 }
 
 model Session {
-  id            String    @id
-  shop          String
-  state         String
-  isOnline      Boolean   @default(false)
-  scope         String?
-  expires       DateTime?
-  accessToken   String
-  userId        BigInt?
-  firstName     String?
-  lastName      String?
-  email         String?
-  accountOwner  Boolean   @default(false)
-  locale        String?
-  collaborator  Boolean?  @default(false)
-  emailVerified Boolean?  @default(false)
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
   refreshToken        String?
   refreshTokenExpires DateTime?
 }
 
 model Shop {
-  id            String   @id @default(cuid())
-  shopDomain    String   @unique
+  id            String    @id @default(cuid())
+  shopDomain    String    @unique
   accessToken   String
-  installedAt   DateTime @default(now())
+  installedAt   DateTime  @default(now())
+  uninstalledAt DateTime?
 
   videos        Video[]
   playlists     Playlist[]
@@ -40,41 +40,51 @@ model Shop {
   subscription  BillingSubscription?
   usage         UsageMetrics?
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum MediaType {
+  VIDEO
+  IMAGE
 }
 
 ////////////////////
 // VIDEOS
 ////////////////////
 model Video {
-  id            String   @id @default(cuid())
-  shopId        String
-  shop          Shop     @relation(fields: [shopId], references: [id])
+  id          String      @id @default(cuid())
+  shopId      String
+  shop        Shop        @relation(fields: [shopId], references: [id])
+  title       String?
+  description String?
+  duration    Int? // seconds
+  status      VideoStatus @default(PROCESSING)
+  type         MediaType
 
-  title         String?
-  description   String?
-  duration      Int?     // seconds
-  status        VideoStatus @default(PROCESSING)
+  streamId     String? // Cloudflare Stream ID
+  originalUrl  String? // só se usar upload direto temporário
+  thumbnailUrl String?
 
-  originalUrl   String
-  thumbnailUrl  String?
+  assets      VideoAsset[]
+  productTags VideoProductTag[]
+  analytics   VideoAnalytics?
 
-  assets        VideoAsset[]
-  productTags   VideoProductTag[]
-  analytics     VideoAnalytics?
+  playlists PlaylistVideo[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shopId])
 }
 
 model VideoAsset {
-  id        String   @id @default(cuid())
-  videoId  String
-  video    Video    @relation(fields: [videoId], references: [id])
+  id      String @id @default(cuid())
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id])
 
-  resolution String  // e.g. 720p, 1080p
-  format     String  // mp4, webm
+  resolution String // e.g. 720p, 1080p
+  format     String // mp4, webm
   url        String
 
   createdAt DateTime @default(now())
@@ -84,67 +94,70 @@ model VideoAsset {
 // PLAYLISTS
 ////////////////////
 model Playlist {
-  id          String   @id @default(cuid())
-  shopId      String
-  shop        Shop     @relation(fields: [shopId], references: [id])
+  id     String @id @default(cuid())
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id])
 
   name        String
-  isPublished Boolean  @default(false)
+  isPublished Boolean @default(false)
 
-  videos      PlaylistVideo[]
+  videos PlaylistVideo[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model PlaylistVideo {
-  id          String   @id @default(cuid())
+  id         String @id @default(cuid())
   playlistId String
   videoId    String
 
-  playlist   Playlist @relation(fields: [playlistId], references: [id])
-  video      Video    @relation(fields: [videoId], references: [id])
+  playlist Playlist @relation(fields: [playlistId], references: [id])
+  video    Video    @relation(fields: [videoId], references: [id])
 
-  position   Int      // drag-and-drop order
+  position Int // drag-and-drop order
+
+  @@index([playlistId])
+  @@index([videoId])
 }
 
 ////////////////////
 // PRODUCT TAGGING
 ////////////////////
 model VideoProductTag {
-  id              String @id @default(cuid())
-  videoId         String
-  video           Video  @relation(fields: [videoId], references: [id])
+  id      String @id @default(cuid())
+  videoId String
+  video   Video  @relation(fields: [videoId], references: [id])
 
   shopifyProductId String
   shopifyVariantId String?
 
-  createdAt       DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 ////////////////////
 // ANALYTICS
 ////////////////////
 model VideoAnalytics {
-  id          String  @id @default(cuid())
-  videoId    String  @unique
-  video      Video   @relation(fields: [videoId], references: [id])
+  id      String @id @default(cuid())
+  videoId String @unique
+  video   Video  @relation(fields: [videoId], references: [id])
 
-  impressions Int    @default(0)
-  plays       Int    @default(0)
-  productClicks Int  @default(0)
-  revenue     Float  @default(0)
+  impressions   Int   @default(0)
+  plays         Int   @default(0)
+  productClicks Int   @default(0)
+  revenue       Float @default(0)
 
-  updatedAt   DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 }
 
 ////////////////////
 // THEME CUSTOMIZATION
 ////////////////////
 model ThemeSettings {
-  id              String @id @default(cuid())
-  shopId          String @unique
-  shop            Shop   @relation(fields: [shopId], references: [id])
+  id     String @id @default(cuid())
+  shopId String @unique
+  shop   Shop   @relation(fields: [shopId], references: [id])
 
   primaryColor    String
   secondaryColor  String
@@ -152,20 +165,20 @@ model ThemeSettings {
   buttonStyle     String
   modalBackground String
 
-  autoplay        Boolean @default(true)
-  autoplayMode    AutoplayMode @default(VIEWPORT)
+  autoplay     Boolean      @default(true)
+  autoplayMode AutoplayMode @default(VIEWPORT)
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 ////////////////////
 // BILLING
 ////////////////////
 model BillingSubscription {
-  id              String @id @default(cuid())
-  shopId          String @unique
-  shop            Shop   @relation(fields: [shopId], references: [id])
+  id     String @id @default(cuid())
+  shopId String @unique
+  shop   Shop   @relation(fields: [shopId], references: [id])
 
   planName        String
   status          SubscriptionStatus
@@ -173,24 +186,24 @@ model BillingSubscription {
 
   currentPeriodEnd DateTime
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 ////////////////////
 // USAGE / LIMITS
 ////////////////////
 model UsageMetrics {
-  id            String @id @default(cuid())
-  shopId        String @unique
-  shop          Shop   @relation(fields: [shopId], references: [id])
+  id     String @id @default(cuid())
+  shopId String @unique
+  shop   Shop   @relation(fields: [shopId], references: [id])
 
-  monthlyViews  Int    @default(0)
-  viewLimit     Int    @default(10000)
+  monthlyViews Int @default(0)
+  viewLimit    Int @default(10000)
 
-  resetAt       DateTime
+  resetAt DateTime
 
-  updatedAt     DateTime @updatedAt
+  updatedAt DateTime @updatedAt
 }
 
 ////////////////////

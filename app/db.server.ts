@@ -1,6 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 
-let prisma;
+declare global {
+  // evita recriar Prisma no dev (hot reload)
+  // eslint-disable-next-line no-var
+  var __prisma: PrismaClient | undefined;
+}
+
+let prisma: PrismaClient;
 
 if (process.env.NODE_ENV === "production") {
   prisma = new PrismaClient({
@@ -15,4 +21,4 @@ if (process.env.NODE_ENV === "production") {
   prisma = global.__prisma;
 }
 
-export { prisma };
+export default prisma; 
