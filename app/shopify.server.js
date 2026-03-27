@@ -7,9 +7,19 @@ import {
 import { PrismaSessionStorage } from "@shopify/shopify-app-session-storage-prisma";
 import prisma from "./db.server";
 
+const getFirstEnv = (...names) => {
+  for (const name of names) {
+    const value = process.env[name];
+    if (typeof value === "string" && value.trim().length > 0) {
+      return value;
+    }
+  }
+  return undefined;
+};
+
 const resolveAppUrl = () => {
-  const host = process.env.HOST;
-  const configured = process.env.SHOPIFY_APP_URL;
+  const host = getFirstEnv("HOST", "RENDER_EXTERNAL_HOSTNAME");
+  const configured = getFirstEnv("SHOPIFY_APP_URL", "APP_URL", "RENDER_EXTERNAL_URL");
 
   if (host) {
     return host.startsWith("http") ? host : `https://${host}`;
@@ -18,11 +28,16 @@ const resolveAppUrl = () => {
   return configured || "";
 };
 
+const resolvedApiVersion =
+  ApiVersion.July25 ||
+  ApiVersion.April25 ||
+  "2025-07";
+
 const shopify = shopifyApp({
-  apiKey: process.env.SHOPIFY_API_KEY,
-  apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
-  apiVersion: ApiVersion.October25,
-  scopes: process.env.SCOPES?.split(","),
+  apiKey: getFirstEnv("SHOPIFY_API_KEY", "API_KEY"),
+  apiSecretKey: getFirstEnv("SHOPIFY_API_SECRET", "API_SECRET_KEY", "SHOPIFY_API_SECRET_KEY") || "",
+  apiVersion: resolvedApiVersion,
+  scopes: getFirstEnv("SCOPES")?.split(","),
   appUrl: resolveAppUrl(),
   authPathPrefix: "/auth",
   sessionStorage: new PrismaSessionStorage(prisma),
@@ -36,7 +51,7 @@ const shopify = shopifyApp({
 });
 
 export default shopify;
-export const apiVersion = ApiVersion.October25;
+export const apiVersion = resolvedApiVersion;
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
 export const authenticate = shopify.authenticate;
 export const unauthenticated = shopify.unauthenticated;

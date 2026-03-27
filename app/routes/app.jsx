@@ -11,7 +11,7 @@ export const loader = async ({ request }) => {
     await authenticate.admin(request);
   }
 
-  return { apiKey: process.env.SHOPIFY_API_KEY || "" };
+  return { apiKey: process.env.SHOPIFY_API_KEY || process.env.API_KEY || "" };
 };
 
 export default function AppLayout() {
