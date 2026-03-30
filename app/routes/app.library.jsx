@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Button } from "@shopify/polaris";
+import { Banner, BlockStack, Button, ButtonGroup, Card, Modal, Page } from "@shopify/polaris";
+import { getEmbeddedHeaders } from "../utils/embedded-auth.client";
 
 function createTimeoutSignal(timeoutMs) {
   const controller = new AbortController();
@@ -7,11 +8,17 @@ function createTimeoutSignal(timeoutMs) {
   return { signal: controller.signal, clear: () => clearTimeout(timeout) };
 }
 
-function xhrRequest({ url, method = "GET", body, timeoutMs = 15000 }) {
+async function xhrRequest({ url, method = "GET", body, timeoutMs = 15000 }) {
+  const headers = await getEmbeddedHeaders();
+
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open(method, url, true);
     xhr.timeout = timeoutMs;
+
+    headers.forEach((value, key) => {
+      xhr.setRequestHeader(key, value);
+    });
 
     xhr.onload = () => {
       let payload = null;
@@ -440,18 +447,10 @@ export default function ContentLibrary() {
   });
 
   return (
-    <div>
-      <div style={{ margin: "0 auto", maxWidth: "980px", padding: "8px 12px 32px" }}>
-        <div style={{ alignItems: "flex-start", display: "flex", justifyContent: "space-between", gap: "16px" }}>
-          <div>
-            <h1 style={{ color: "#1f2937", fontSize: "39px", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.05, margin: 0 }}>
-              Content Library
-            </h1>
-            <p style={{ color: "#4b5563", fontSize: "15px", margin: "8px 0 0" }}>
-              Manage your videos and images
-            </p>
-          </div>
-
+    <Page title="Content Library" subtitle="Manage your videos and images" fullWidth>
+      <BlockStack gap="400">
+        <Card>
+          <div style={{ margin: "0 auto", maxWidth: "980px", padding: "8px 12px 24px" }}>
           <div style={{ alignItems: "center", display: "flex", gap: "10px", paddingTop: "4px" }}>
             <ToolbarButton
               variant="secondary"
@@ -464,7 +463,6 @@ export default function ContentLibrary() {
               + Add New Content
             </ToolbarButton>
           </div>
-        </div>
 
         <div style={{ alignItems: "center", display: "flex", justifyContent: "space-between", marginTop: "30px" }}>
           <p style={{ color: "#374151", fontSize: "15px", margin: 0 }}>
@@ -501,7 +499,7 @@ export default function ContentLibrary() {
 
         {deleteError && (
           <div style={{ marginTop: "12px" }}>
-            <p style={{ color: "#b91c1c", fontSize: "14px", margin: 0 }}>{deleteError}</p>
+            <Banner tone="critical">{deleteError}</Banner>
           </div>
         )}
 
@@ -512,7 +510,8 @@ export default function ContentLibrary() {
             <MediaTable media={filteredMedia} selectedIds={selectedIds} onToggleSelect={toggleSelect} onTagProducts={openTagModal} />
           )}
         </div>
-      </div>
+          </div>
+        </Card>
 
       <UploadModal
         open={openModal}
@@ -546,8 +545,8 @@ export default function ContentLibrary() {
         saving={savingTags}
         error={tagError}
       />
-
-    </div>
+      </BlockStack>
+    </Page>
   );
 }
 
@@ -721,35 +720,22 @@ function ToolbarButton({ children, onClick, disabled, variant }) {
 
 function ViewModeToggle({ viewMode, setViewMode }) {
   return (
-    <div style={{ alignItems: "center", background: "#fff", border: "1px solid #d9dce1", borderRadius: "12px", display: "inline-flex", padding: "3px" }}>
-      <button type="button" onClick={() => setViewMode("grid")} style={viewModeButtonStyle(viewMode === "grid")}>
-        ▦ Grid view
-      </button>
-      <button type="button" onClick={() => setViewMode("table")} style={viewModeButtonStyle(viewMode === "table")}>
-        ☷ Table view
-      </button>
-    </div>
+    <ButtonGroup>
+      <Button pressed={viewMode === "grid"} onClick={() => setViewMode("grid")}>
+        Grid view
+      </Button>
+      <Button pressed={viewMode === "table"} onClick={() => setViewMode("table")}>
+        Table view
+      </Button>
+    </ButtonGroup>
   );
 }
 
 function FilterChip({ active, children, onClick }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        background: active ? "#f3f4f6" : "transparent",
-        border: "none",
-        borderRadius: "12px",
-        color: "#303030",
-        cursor: "pointer",
-        fontSize: "14px",
-        fontWeight: active ? 700 : 500,
-        padding: "10px 14px",
-      }}
-    >
+    <Button pressed={active} variant="tertiary" onClick={onClick}>
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -798,18 +784,6 @@ function getMediaTitle(item) {
   }
 }
 
-function viewModeButtonStyle(active) {
-  return {
-    background: active ? "#e5e7eb" : "transparent",
-    border: "none",
-    borderRadius: "10px",
-    color: "#303030",
-    cursor: "pointer",
-    fontSize: "14px",
-    fontWeight: 600,
-    padding: "9px 12px",
-  };
-}
 function UploadModal({
   open,
   closeModal,
@@ -1150,80 +1124,32 @@ function OverlayModal({
   secondaryAction,
   children,
 }) {
-  if (!open) return null;
-
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(17, 24, 39, 0.45)",
-        zIndex: 9999,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-      }}
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={title}
+      primaryAction={
+        primaryAction
+          ? {
+              content: primaryAction.content,
+              onAction: primaryAction.onAction,
+              disabled: primaryAction.disabled,
+            }
+          : undefined
+      }
+      secondaryActions={
+        secondaryAction
+          ? [
+              {
+                content: secondaryAction.content,
+                onAction: secondaryAction.onAction,
+              },
+            ]
+          : []
+      }
     >
-      <div
-        onClick={(event) => event.stopPropagation()}
-        style={{
-          width: "100%",
-          maxWidth: "760px",
-          maxHeight: "85vh",
-          overflow: "auto",
-          borderRadius: "14px",
-          background: "#ffffff",
-          border: "1px solid #d9dce1",
-          boxShadow: "0 20px 40px rgba(15, 23, 42, 0.28)",
-        }}
-      >
-        <div style={{ alignItems: "center", display: "flex", justifyContent: "space-between", padding: "14px 16px", borderBottom: "1px solid #e5e7eb" }}>
-          <h2 style={{ margin: 0, fontSize: "20px", color: "#111827" }}>{title}</h2>
-          <button type="button" onClick={onClose} style={{ border: "none", background: "transparent", fontSize: "20px", cursor: "pointer", color: "#6b7280" }}>
-            ×
-          </button>
-        </div>
-
-        <div style={{ padding: "16px" }}>{children}</div>
-
-        <div style={{ alignItems: "center", display: "flex", justifyContent: "flex-end", gap: "10px", padding: "12px 16px", borderTop: "1px solid #e5e7eb" }}>
-          {secondaryAction ? (
-            <button
-              type="button"
-              onClick={secondaryAction.onAction}
-              style={{
-                background: "#fff",
-                border: "1px solid #d1d5db",
-                borderRadius: "10px",
-                padding: "8px 14px",
-                cursor: "pointer",
-              }}
-            >
-              {secondaryAction.content}
-            </button>
-          ) : null}
-
-          {primaryAction ? (
-            <button
-              type="button"
-              onClick={primaryAction.onAction}
-              disabled={primaryAction.disabled}
-              style={{
-                background: primaryAction.disabled ? "#9ca3af" : "#111827",
-                color: "#fff",
-                border: "1px solid #111827",
-                borderRadius: "10px",
-                padding: "8px 14px",
-                cursor: primaryAction.disabled ? "not-allowed" : "pointer",
-              }}
-            >
-              {primaryAction.content}
-            </button>
-          ) : null}
-        </div>
-      </div>
-    </div>
+      <Modal.Section>{children}</Modal.Section>
+    </Modal>
   );
 }

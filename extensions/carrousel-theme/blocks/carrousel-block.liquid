@@ -1,0 +1,156 @@
+{% liquid
+  assign resolved_font = 'inherit'
+  case block.settings.font_family
+    when 'heading'
+      assign resolved_font = 'var(--font-heading-family, inherit)'
+    when 'body'
+      assign resolved_font = 'var(--font-body-family, inherit)'
+    when 'serif'
+      assign resolved_font = 'Georgia, serif'
+    when 'mono'
+      assign resolved_font = 'ui-monospace, SFMono-Regular, monospace'
+  endcase
+
+  assign resolved_product_id = blank
+  if product
+    assign resolved_product_id = product.id
+  endif
+%}
+
+<div
+  data-carrousel-block
+  data-block-id="{{ block.id }}"
+  data-endpoint="https://{{ shop.permanent_domain }}/apps/carrousel"
+  data-heading="{{ block.settings.heading | escape }}"
+  data-source="{{ block.settings.media_source | escape }}"
+  data-playlist="{{ block.settings.playlist_name | escape }}"
+  data-product-id="{{ resolved_product_id }}"
+  data-limit="{{ block.settings.media_limit }}"
+  class="carrousel-block"
+  style="
+    --carrousel-bg: {{ block.settings.background_color }};
+    --carrousel-card-bg: {{ block.settings.card_background }};
+    --carrousel-text: {{ block.settings.text_color }};
+    --carrousel-accent: {{ block.settings.accent_color }};
+    --carrousel-radius: {{ block.settings.corner_radius }}px;
+    --carrousel-columns-mobile: {{ block.settings.columns_mobile }};
+    --carrousel-columns-desktop: {{ block.settings.columns_desktop }};
+    font-family: {{ resolved_font }};
+  "
+  {{ block.shopify_attributes }}
+>
+  <div class="carrousel-block__empty">
+    <p>Configure this carousel in the Theme Editor and preview media here.</p>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Carousel block",
+  "target": "section",
+  "stylesheet": "carrousel-block.css",
+  "javascript": "carrousel-block.js",
+  "enabled_on": {
+    "templates": ["index", "product", "collection"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Shop the carousel"
+    },
+    {
+      "type": "select",
+      "id": "media_source",
+      "label": "Media source",
+      "default": "default",
+      "options": [
+        { "value": "default", "label": "Default playlist" },
+        { "value": "playlist", "label": "Specific playlist name" },
+        { "value": "product", "label": "Tagged media for current product" }
+      ]
+    },
+    {
+      "type": "text",
+      "id": "playlist_name",
+      "label": "Playlist name",
+      "default": "Default",
+      "info": "Used when Media source is Specific playlist name or as a fallback for product pages."
+    },
+    {
+      "type": "range",
+      "id": "media_limit",
+      "label": "Maximum items",
+      "min": 3,
+      "max": 24,
+      "step": 1,
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Cards on desktop",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "Cards on mobile",
+      "default": "1",
+      "options": [
+        { "value": "1", "label": "1 card" },
+        { "value": "2", "label": "2 cards" }
+      ]
+    },
+    {
+      "type": "range",
+      "id": "corner_radius",
+      "label": "Corner radius",
+      "min": 0,
+      "max": 32,
+      "step": 1,
+      "default": 18
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "card_background",
+      "label": "Card background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#111827"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent color",
+      "default": "#111827"
+    },
+    {
+      "type": "select",
+      "id": "font_family",
+      "label": "Font family",
+      "default": "body",
+      "options": [
+        { "value": "body", "label": "Theme body font" },
+        { "value": "heading", "label": "Theme heading font" },
+        { "value": "serif", "label": "Serif" },
+        { "value": "mono", "label": "Monospace" }
+      ]
+    }
+  ]
+}
+{% endschema %}

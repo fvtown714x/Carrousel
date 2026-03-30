@@ -1,0 +1,110 @@
+.carrousel-block {
+  --carrousel-bg: #ffffff;
+  --carrousel-card-bg: #ffffff;
+  --carrousel-text: #111827;
+  --carrousel-accent: #111827;
+  --carrousel-radius: 18px;
+  --carrousel-gap: 16px;
+  --carrousel-columns-mobile: 1;
+  --carrousel-columns-desktop: 3;
+  background: var(--carrousel-bg);
+  border-radius: calc(var(--carrousel-radius) + 4px);
+  color: var(--carrousel-text);
+  padding: 20px;
+}
+
+.carrousel-block__header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.carrousel-block__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.carrousel-block__controls {
+  display: flex;
+  gap: 8px;
+}
+
+.carrousel-block__control {
+  appearance: none;
+  background: var(--carrousel-card-bg);
+  border: 1px solid color-mix(in srgb, var(--carrousel-accent) 22%, white);
+  border-radius: 999px;
+  color: var(--carrousel-text);
+  cursor: pointer;
+  height: 38px;
+  width: 38px;
+}
+
+.carrousel-block__viewport {
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+.carrousel-block__viewport::-webkit-scrollbar {
+  display: none;
+}
+
+.carrousel-block__track {
+  display: grid;
+  gap: var(--carrousel-gap);
+  grid-auto-columns: calc(100% / var(--carrousel-columns-mobile) - (var(--carrousel-gap) * (var(--carrousel-columns-mobile) - 1) / var(--carrousel-columns-mobile)));
+  grid-auto-flow: column;
+}
+
+.carrousel-block__card {
+  background: var(--carrousel-card-bg);
+  border: 1px solid color-mix(in srgb, var(--carrousel-accent) 12%, white);
+  border-radius: var(--carrousel-radius);
+  overflow: hidden;
+}
+
+.carrousel-block__media {
+  aspect-ratio: 9 / 16;
+  background: color-mix(in srgb, var(--carrousel-accent) 8%, white);
+  display: block;
+  object-fit: cover;
+  width: 100%;
+}
+
+.carrousel-block__content {
+  padding: 12px 14px 14px;
+}
+
+.carrousel-block__label {
+  color: color-mix(in srgb, var(--carrousel-text) 72%, white);
+  display: block;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.carrousel-block__name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.carrousel-block__empty {
+  border: 1px dashed color-mix(in srgb, var(--carrousel-accent) 20%, white);
+  border-radius: var(--carrousel-radius);
+  padding: 24px;
+  text-align: center;
+}
+
+@media screen and (min-width: 750px) {
+  .carrousel-block__track {
+    grid-auto-columns: calc(100% / var(--carrousel-columns-desktop) - (var(--carrousel-gap) * (var(--carrousel-columns-desktop) - 1) / var(--carrousel-columns-desktop)));
+  }
+}

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { Button } from "@shopify/polaris";
+import { Banner, BlockStack, Button, Card, Modal, Page } from "@shopify/polaris";
+import { getEmbeddedHeaders } from "../utils/embedded-auth.client";
 
 type XhrRequestParams = {
   url: string;
@@ -41,11 +42,17 @@ type PlaylistMediaItem = {
   selected: boolean;
 };
 
-function xhrRequest({ url, method = "GET", body = null, timeoutMs = 15000 }: XhrRequestParams) {
+async function xhrRequest({ url, method = "GET", body = null, timeoutMs = 15000 }: XhrRequestParams) {
+  const headers = await getEmbeddedHeaders();
+
   return new Promise<XhrResult>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open(method, url, true);
     xhr.timeout = timeoutMs;
+
+    headers.forEach((value, key) => {
+      xhr.setRequestHeader(key, value);
+    });
 
     xhr.onload = () => {
       let payload = null;
@@ -376,42 +383,29 @@ export default function PlaylistsPage() {
   };
 
   return (
-    <div>
-      <div style={{ margin: "0 auto", maxWidth: "980px", padding: "8px 12px 32px" }}>
-        <div style={{ alignItems: "flex-start", display: "flex", justifyContent: "space-between", gap: "16px" }}>
-          <h1 style={{ color: "#1f2937", fontSize: "39px", fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1.05, margin: 0 }}>
-            Playlists
-          </h1>
-
-          <div style={{ alignItems: "center", display: "flex", gap: "10px", paddingTop: "4px" }}>
+    <Page title="Playlists" subtitle="Create, organize and publish media playlists." fullWidth>
+      <BlockStack gap="400">
+        <Card>
+          <div style={{ margin: "0 auto", maxWidth: "980px", padding: "8px 12px 24px" }}>
+            <div style={{ alignItems: "center", display: "flex", gap: "10px", paddingTop: "4px" }}>
             <ToolbarButton variant="secondary">How to Add Widgets</ToolbarButton>
             <ToolbarButton variant="primary" onClick={openCreate}>+ Create Playlist</ToolbarButton>
           </div>
-        </div>
 
-        <div style={{ background: "#fff", border: "1px solid #d9dce1", borderRadius: "14px", marginTop: "22px", overflow: "hidden" }}>
-          <div style={{ alignItems: "center", background: "#f4b400", color: "#111827", display: "flex", fontSize: "22px", fontWeight: 700, gap: "10px", padding: "12px 14px" }}>
-            <span style={{ background: "#111827", borderRadius: "999px", color: "#fff", display: "inline-flex", fontSize: "12px", fontWeight: 700, padding: "4px 10px" }}>
-              WARNING
-            </span>
-            <span style={{ fontSize: "24px", letterSpacing: "-0.03em", lineHeight: 1.15 }}>Your playlists are not visible on your store yet</span>
-          </div>
-          <div style={{ padding: "14px" }}>
-            <p style={{ color: "#374151", fontSize: "15px", margin: "0 0 12px" }}>
+
+        <div style={{ marginTop: "22px" }}>
+          <Banner tone="warning" title="Your playlists are not visible on your store yet">
+            <p style={{ margin: 0 }}>
               You've created playlists, but you haven't added any widgets to your store pages. Go to the Widgets page to add them.
             </p>
-            <div style={{ display: "flex", gap: "10px" }}>
-              <ToolbarButton variant="secondary">Add Widgets</ToolbarButton>
-              <ToolbarButton variant="secondary">Watch tutorial</ToolbarButton>
-            </div>
-          </div>
+          </Banner>
         </div>
 
-        {error && (
-          <div style={{ marginTop: "12px" }}>
-            <p style={{ color: "#b91c1c", margin: 0 }}>{error}</p>
-          </div>
-        )}
+            {error && (
+              <div style={{ marginTop: "12px" }}>
+                <Banner tone="critical">{error}</Banner>
+              </div>
+            )}
 
         <div style={{ background: "#fff", border: "1px solid #d9dce1", borderRadius: "14px", marginTop: "16px", overflow: "hidden" }}>
           <div style={{ color: "#6b7280", display: "grid", fontSize: "12px", fontWeight: 700, gridTemplateColumns: "1.4fr 1.2fr 1.2fr 120px", letterSpacing: "0.03em", padding: "14px 16px", textTransform: "uppercase" }}>
@@ -441,46 +435,28 @@ export default function PlaylistsPage() {
                   <div style={{ alignItems: "center", display: "flex", gap: "8px" }}>
                     <span style={{ color: "#6b7280", fontSize: "14px" }}>{tagsLabel}</span>
                     {!isDefault ? (
-                      <button type="button" onClick={openCreate} style={{ background: "transparent", border: "none", color: "#2563eb", cursor: "pointer", fontSize: "14px", fontWeight: 600, padding: 0 }}>
+                      <Button variant="plain" onClick={openCreate}>
                         Edit Tags
-                      </button>
+                      </Button>
                     ) : null}
                   </div>
 
-                  <button
-                    type="button"
+                  <Button
                     onClick={() => !isDefault && openAddContent(playlist)}
                     disabled={isDefault}
-                    style={{
-                      background: isDefault ? "#f3f4f6" : "#23262f",
-                      border: isDefault ? "1px solid #d1d5db" : "1px solid #23262f",
-                      borderRadius: "10px",
-                      color: isDefault ? "#9ca3af" : "#fff",
-                      cursor: isDefault ? "not-allowed" : "pointer",
-                      fontSize: "14px",
-                      fontWeight: 600,
-                      justifySelf: "start",
-                      padding: "6px 12px",
-                    }}
+                    variant="primary"
                   >
                     Add Content
-                  </button>
+                  </Button>
 
-                  <button
-                    type="button"
+                  <Button
                     onClick={() => deletePlaylist(playlist.id)}
                     disabled={isDefault || deletingId === playlist.id}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: isDefault ? "#9ca3af" : "#b91c1c",
-                      cursor: isDefault || deletingId === playlist.id ? "not-allowed" : "pointer",
-                      fontSize: "18px",
-                      justifySelf: "start",
-                    }}
+                    tone={isDefault ? undefined : "critical"}
+                    variant="plain"
                   >
-                    {isDefault ? "ⓘ" : deletingId === playlist.id ? "…" : "🗑"}
-                  </button>
+                    {isDefault ? "Info" : deletingId === playlist.id ? "Deleting..." : "Delete"}
+                  </Button>
                 </div>
 
                 {expanded && (
@@ -503,9 +479,9 @@ export default function PlaylistsPage() {
               </div>
             );
           })}
-
-        </div>
-      </div>
+          </div>
+          </div>
+        </Card>
 
       <OverlayModal
         open={openCreateModal}
@@ -729,7 +705,8 @@ export default function PlaylistsPage() {
           </div>
         </div>
       </OverlayModal>
-    </div>
+      </BlockStack>
+    </Page>
   );
 }
 
@@ -748,85 +725,33 @@ function OverlayModal({
   secondaryAction?: { content: string; onAction: () => void };
   children: ReactNode;
 }) {
-  if (!open) return null;
-
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(17, 24, 39, 0.45)",
-        zIndex: 9999,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "20px",
-      }}
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={title}
+      primaryAction={
+        primaryAction
+          ? {
+              content: primaryAction.content,
+              onAction: primaryAction.onAction,
+              disabled: primaryAction.disabled,
+            }
+          : undefined
+      }
+      secondaryActions={
+        secondaryAction
+          ? [
+              {
+                content: secondaryAction.content,
+                onAction: secondaryAction.onAction,
+              },
+            ]
+          : []
+      }
     >
-      <div
-        onClick={(event) => event.stopPropagation()}
-        style={{
-          width: "100%",
-          maxWidth: "620px",
-          maxHeight: "85vh",
-          overflow: "auto",
-          borderRadius: "18px",
-          background: "var(--p-color-bg-surface)",
-          border: "1px solid var(--p-color-border-secondary)",
-          boxShadow: "0 18px 40px rgba(15, 23, 42, 0.22)",
-        }}
-      >
-        <div style={{ alignItems: "center", display: "flex", justifyContent: "space-between", padding: "16px 18px", borderBottom: "1px solid var(--p-color-border-secondary)" }}>
-          <h2 style={{ margin: 0, fontSize: "20px", color: "var(--p-color-text)", fontWeight: 650 }}>{title}</h2>
-          <button type="button" onClick={onClose} style={{ border: "none", background: "transparent", fontSize: "20px", cursor: "pointer", color: "var(--p-color-text-secondary)" }}>
-            ×
-          </button>
-        </div>
-
-        <div style={{ padding: "20px 16px" }}>{children}</div>
-
-        <div style={{ alignItems: "center", display: "flex", justifyContent: "flex-end", gap: "10px", padding: "14px 16px", borderTop: "1px solid var(--p-color-border-secondary)" }}>
-          {secondaryAction ? (
-            <button
-              type="button"
-              onClick={secondaryAction.onAction}
-              style={{
-                background: "var(--p-color-bg-surface)",
-                border: "1px solid var(--p-color-border-secondary)",
-                borderRadius: "10px",
-                color: "var(--p-color-text)",
-                minHeight: "36px",
-                padding: "8px 14px",
-                cursor: "pointer",
-              }}
-            >
-              {secondaryAction.content}
-            </button>
-          ) : null}
-
-          {primaryAction ? (
-            <button
-              type="button"
-              onClick={primaryAction.onAction}
-              disabled={primaryAction.disabled}
-              style={{
-                background: primaryAction.disabled ? "var(--p-color-bg-fill-disabled)" : "var(--p-color-bg-fill-brand)",
-                color: primaryAction.disabled ? "var(--p-color-text-disabled)" : "var(--p-color-text-inverse)",
-                border: `1px solid ${primaryAction.disabled ? "var(--p-color-border-disabled)" : "var(--p-color-border-brand)"}`,
-                borderRadius: "10px",
-                boxShadow: primaryAction.disabled ? "none" : "inset 0 -1px 0 rgba(0,0,0,0.12)",
-                minHeight: "36px",
-                padding: "8px 14px",
-                cursor: primaryAction.disabled ? "not-allowed" : "pointer",
-              }}
-            >
-              {primaryAction.content}
-            </button>
-          ) : null}
-        </div>
-      </div>
-    </div>
+      <Modal.Section>{children}</Modal.Section>
+    </Modal>
   );
 }
 
