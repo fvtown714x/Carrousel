@@ -2,7 +2,7 @@ import { v2 as cloudinary } from "cloudinary";
 import type { ActionFunctionArgs } from "react-router";
 import prisma from "../db.server";
 import { buildMediaRecordData } from "../services/media.server";
-import { requireShopDev } from "../utils/requireShopDev.server";
+import { requireShop } from "../utils/requireShop.server";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
@@ -48,7 +48,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
-    const { shop } = await requireShopDev();
+    const { shop } = await requireShop(request);
     const formData = await request.formData();
     const inputUrl = formData.get("url");
 

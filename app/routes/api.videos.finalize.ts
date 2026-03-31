@@ -1,7 +1,7 @@
 import prisma from "../db.server";
 import type { ActionFunction } from "react-router";
 import { buildMediaRecordData, isLikelyVideo } from "../services/media.server";
-import { requireShopDev } from "../utils/requireShopDev.server";
+import { requireShop } from "../utils/requireShop.server";
 import { appendFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -24,7 +24,7 @@ export const action: ActionFunction = async ({ request }) => {
   logFinalize(`[${requestId}] content-type=${request.headers.get("content-type") || "unknown"}`);
 
   try {
-    const { shop } = await requireShopDev();
+    const { shop } = await requireShop(request);
     logFinalize(`[${requestId}] shopId=${shop.id}`);
     const form = await request.formData();
     const cloudinaryResult = form.get("result");

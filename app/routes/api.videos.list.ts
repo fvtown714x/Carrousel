@@ -1,6 +1,5 @@
-import { authenticate } from "../shopify.server";
 import prisma from "../db.server";
-import { requireShopDev } from "../utils/requireShopDev.server";
+import { requireShop } from "../utils/requireShop.server";
 
 function buildListThumbnail(url?: string | null) {
   if (!url) return null;
@@ -17,8 +16,7 @@ function isVideoUrl(url?: string | null) {
 }
 
 export const loader = async ({ request }) => {
-
-  const { shop } = await requireShopDev();
+  const { shop } = await requireShop(request);
 
   const videos = await prisma.video.findMany({
     where: {

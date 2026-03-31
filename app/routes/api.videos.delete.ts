@@ -1,6 +1,6 @@
 import type { ActionFunctionArgs } from "react-router";
 import prisma from "../db.server";
-import { requireShopDev } from "../utils/requireShopDev.server";
+import { requireShop } from "../utils/requireShop.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   if (request.method.toUpperCase() !== "POST") {
@@ -8,7 +8,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
-    const { shop } = await requireShopDev();
+    const { shop } = await requireShop(request);
     const formData = await request.formData();
     const rawIds = formData.get("ids");
 

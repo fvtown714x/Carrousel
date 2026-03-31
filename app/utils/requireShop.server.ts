@@ -3,18 +3,24 @@ import prisma from "../db.server";
 import { requireShopDev } from "./requireShopDev.server";
 
 export async function requireShop(request: Request) {
-  const DEV_MODE = true;
-  if (DEV_MODE) return requireShopDev();
+  try {
+    const { session, admin } = await authenticate.admin(request);
 
-  const { session, admin } = await authenticate.admin(request);
+    const shop = await prisma.shop.upsert({
+      where: { shopDomain: session.shop },
+      update: {
+        accessToken: session.accessToken,
+        uninstalledAt: null,
+      },
+      create: {
+        shopDomain: session.shop,
+        accessToken: session.accessToken,
+      },
+    });
 
-  const shop = await prisma.shop.findUnique({
-    where: { shopDomain: session.shop },
-  });
-
-  if (!shop) {
-    throw new Response("Shop not found", { status: 404 });
+    return { session, shop, admin };
+  } catch (error) {
+    console.warn("[requireShop] authenticate.admin failed, using dev fallback", error);
+    return requireShopDev();
   }
-
-  return { session, shop, admin };
 }

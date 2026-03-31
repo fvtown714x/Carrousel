@@ -1,10 +1,10 @@
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
 import prisma from "../db.server";
-import { requireShopDev } from "../utils/requireShopDev.server";
+import { requireShop } from "../utils/requireShop.server";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
-    const { shop } = await requireShopDev();
+    const { shop } = await requireShop(request);
     const url = new URL(request.url);
     const videoId = (url.searchParams.get("videoId") || "").trim();
 
@@ -49,7 +49,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 
   try {
-    const { shop } = await requireShopDev();
+    const { shop } = await requireShop(request);
     const formData = await request.formData();
 
     const videoId = String(formData.get("videoId") || "").trim();

@@ -2,7 +2,7 @@
 import prisma from "../db.server";
 import { v2 as cloudinary } from "cloudinary";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "react-router";
-import { requireShopDev } from "../utils/requireShopDev.server";
+import { requireShop } from "../utils/requireShop.server";
 import { uploadVideo } from "../services/cloudinary.server";
 import { appendFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -72,7 +72,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   logUpload(`[${requestId}] /api/videos/upload loader hit method=${request.method}`);
 
   try {
-    const { shop } = await requireShopDev();
+    const { shop } = await requireShop(request);
     const url = new URL(request.url);
     const mediaType = normalizeMediaType(url.searchParams.get("mediaType"));
     const cloudinaryIssue = getCloudinaryConfigIssue();
@@ -98,7 +98,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   logUpload(`[${requestId}] content-type=${request.headers.get("content-type") || "unknown"}`);
 
   try {
-    const { shop } = await requireShopDev();
+    const { shop } = await requireShop(request);
     const url = new URL(request.url);
     const mediaType = normalizeMediaType(url.searchParams.get("mediaType"));
     logUpload(`[${requestId}] shopId=${shop.id}`);

@@ -113,10 +113,12 @@ async function getProductTaggedVideos(shopId: string, productId: string, limit: 
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  await authenticate.public.appProxy(request);
+  const proxyContext = await authenticate.public.appProxy(request);
 
   const url = new URL(request.url);
-  const shopDomain = (url.searchParams.get("shop") || "").trim().toLowerCase();
+  const shopDomain = (
+    proxyContext.session?.shop || url.searchParams.get("shop") || ""
+  ).trim().toLowerCase();
   const source = (url.searchParams.get("source") || "default").trim().toLowerCase();
   const playlistName = cleanPlaylistName(url.searchParams.get("playlist"));
   const productId = (url.searchParams.get("productId") || "").trim();
@@ -126,8 +128,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return jsonResponse({ items: [], error: "Missing shop domain." }, 400);
   }
 
-  const shop = await prisma.shop.findUnique({
+  if (!proxyContext.session) {
+    return jsonResponse(
+      { items: [], error: "The app proxy is authenticated, but no installed shop session was found. Reinstall the app and approve scopes again." },
+      401,
+    );
+  }
+
+  const shop = await prisma.shop.upsert({
     where: { shopDomain },
+    update: {
+      accessToken: proxyContext.session.accessToken,
+      uninstalledAt: null,
+    },
+    create: {
+      shopDomain,
+      accessToken: proxyContext.session.accessToken,
+    },
     select: { id: true },
   });
 
