@@ -156,7 +156,7 @@ export default function ContentLibrary() {
     });
 
     try {
-      // Test connectivity first
+      // Ping is only diagnostic; do not block uploads on this check.
       console.log("[library] testing ping endpoint", pingEndpoint);
       try {
         const pingRes = await xhrRequest({
@@ -167,13 +167,11 @@ export default function ContentLibrary() {
 
         console.log("[library] ping status", pingRes.status, pingRes.payload);
         if (!pingRes.ok) {
-          setUploadError("The server returned an error for the ping request.");
-          return;
+          console.warn("[library] ping returned non-ok; continuing upload flow", pingRes.status, pingRes.payload);
         }
       } catch (pingErr) {
         console.error("[library] ping failed:", pingErr);
-        setUploadError("No server connectivity. Check your network or the app URL.");
-        return;
+        console.warn("[library] ping failed, continuing upload flow");
       }
 
       console.log("[library] requesting signed upload params from", signedUploadEndpoint);

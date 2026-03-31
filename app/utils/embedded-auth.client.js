@@ -6,7 +6,13 @@ export async function getEmbeddedHeaders(initialHeaders = {}) {
   }
 
   try {
-    const token = await window.shopify?.idToken?.();
+    const tokenPromise = window.shopify?.idToken?.();
+    const token = await Promise.race([
+      tokenPromise,
+      new Promise((resolve) => {
+        setTimeout(() => resolve(null), 1500);
+      }),
+    ]);
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
     }
