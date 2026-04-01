@@ -149,10 +149,20 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
   }
 
-  const shop = await prisma.shop.findUnique({
+  let shop = await prisma.shop.findUnique({
     where: { shopDomain },
     select: { id: true },
   });
+
+  // Dev-only fallback: if DB was reset and session storage is out of sync,
+  // use the newest active shop so Theme Editor preview does not hard-fail.
+  if (!shop && process.env.NODE_ENV !== "production") {
+    shop = await prisma.shop.findFirst({
+      where: { uninstalledAt: null },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true },
+    });
+  }
 
   if (!shop) {
     return jsonResponse(

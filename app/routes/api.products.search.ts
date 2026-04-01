@@ -1,7 +1,5 @@
 import type { LoaderFunctionArgs } from "react-router";
 import { requireShop } from "../utils/requireShop.server";
-import prisma from "../db.server";
-import { unauthenticated } from "../shopify.server";
 
 function normalizeProducts(raw: any[]) {
   return raw.map((node) => ({
@@ -53,7 +51,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       query: query ? `${query} status:ACTIVE` : "status:ACTIVE",
     };
 
-    const adminClient = admin || (await unauthenticated.admin(shopDomain)).admin;
+    if (!admin) {
+      return Response.json(
+        {
+          products: [],
+          error:
+            "Unable to load products because there is no authenticated admin session. Open the app inside Shopify Admin and try again.",
+        },
+        { status: 401 },
+      );
+    }
+
+    const adminClient = admin;
     const response = await adminClient.graphql(gqlQuery, { variables });
 
     const payload: any = await response.json();
