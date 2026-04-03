@@ -145,6 +145,51 @@
   }
 
   /* ── hydrate ── */
+  /* ── design-mode playlist picker ── */
+  async function appendDesignPicker(root) {
+    var endpoint = root.dataset.endpoint;
+    if (!endpoint) return;
+    var listUrl = new URL(endpoint);
+    listUrl.searchParams.set('mode', 'list');
+
+    var playlists = [];
+    try {
+      var res = await fetch(listUrl.toString(), { credentials: 'same-origin' });
+      var data = await res.json();
+      playlists = data.playlists || [];
+    } catch (_) { return; }
+
+    if (playlists.length === 0) return;
+
+    var currentName = (root.dataset.playlist || '').toLowerCase();
+    var pills = playlists.map(function (p) {
+      var active = p.name.toLowerCase() === currentName;
+      return (
+        '<button type="button" class="crsl-dm-pill' + (active ? ' crsl-dm-pill--active' : '') + '"' +
+        ' data-name="' + esc(p.name) + '">' + esc(p.name) + '</button>'
+      );
+    }).join('');
+
+    var picker = document.createElement('div');
+    picker.className = 'crsl-dm-picker';
+    picker.innerHTML =
+      '<span class="crsl-dm-label">Playlists disponíveis:</span>' +
+      '<div class="crsl-dm-pills">' + pills + '</div>';
+
+    picker.querySelectorAll('.crsl-dm-pill').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        root.dataset.playlist = this.dataset.name;
+        root.dataset.initialized = '';
+        hydrate(root);
+      });
+    });
+
+    // Remove old picker if present, then append fresh one
+    var old = root.querySelector('.crsl-dm-picker');
+    if (old) old.remove();
+    root.appendChild(picker);
+  }
+
   async function hydrate(root) {
     if (!root || root.dataset.initialized === 'true') return;
     root.dataset.initialized = 'true';
@@ -173,20 +218,20 @@
         root.innerHTML = '<div class="crsl-empty"><p>' +
           (inEditor ? 'App proxy did not return JSON. Reinstall the app to fix.' : 'Unable to load carousel content right now.') +
           '</p></div>';
-        return;
-      }
-
-      if (!res.ok || !payload.items || payload.items.length === 0) {
+      } else if (!res.ok || !payload.items || payload.items.length === 0) {
         root.innerHTML = '<div class="crsl-empty"><p>' +
           (inEditor ? (payload.error || 'No media matched the current settings yet.') : 'No media is available for this carousel.') +
           '</p></div>';
-        return;
+      } else {
+        renderItems(root, payload.items, heading);
       }
-
-      renderItems(root, payload.items, heading);
     } catch (err) {
       console.error('[carrousel-block]', err);
       root.innerHTML = '<div class="crsl-empty"><p>Unable to load carousel content right now.</p></div>';
+    }
+
+    if (inEditor) {
+      appendDesignPicker(root); // fire-and-forget — renders below carousel
     }
   }
 

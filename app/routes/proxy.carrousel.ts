@@ -69,8 +69,18 @@ async function getDefaultPlaylistVideos(shopId: string, limit: number) {
 }
 
 async function getNamedPlaylistVideos(shopId: string, playlistName: string, limit: number) {
-  const playlist = await prisma.playlist.findFirst({
-    where: { shopId, name: playlistName },
+  // Case-insensitive match — SQLite doesn't support Prisma's mode:'insensitive'
+  const candidates = await prisma.playlist.findMany({
+    where: { shopId },
+    select: { id: true, name: true },
+  });
+  const match = candidates.find(
+    (p) => p.name.trim().toLowerCase() === playlistName.trim().toLowerCase(),
+  );
+  if (!match) return [];
+
+  const playlist = await prisma.playlist.findUnique({
+    where: { id: match.id },
     include: {
       videos: {
         orderBy: { position: "asc" },
@@ -123,6 +133,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const shopDomain = (
     proxyContext.session?.shop || url.searchParams.get("shop") || ""
   ).trim().toLowerCase();
+  const mode = (url.searchParams.get("mode") || "carousel").trim().toLowerCase();
   const source = (url.searchParams.get("source") || "default").trim().toLowerCase();
   const playlistName = cleanPlaylistName(url.searchParams.get("playlist"));
   const productId = (url.searchParams.get("productId") || "").trim();
@@ -175,20 +186,29 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     );
   }
 
+  // Return playlist list for the design-mode picker
+  if (mode === "list") {
+    const playlists = await prisma.playlist.findMany({
+      where: { shopId: shop.id },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
+    return jsonResponse({ playlists });
+  }
+
   let items: StorefrontItem[] = [];
 
+  // Product-tagged source always takes priority
   if (source === "product" && productId) {
     items = await getProductTaggedVideos(shop.id, productId, limit);
   }
 
-  if (items.length === 0 && source === "playlist" && playlistName) {
-    items = await getNamedPlaylistVideos(shop.id, playlistName, limit);
-  }
-
+  // If a playlist name was provided, try it next (case-insensitive, regardless of source)
   if (items.length === 0 && playlistName) {
     items = await getNamedPlaylistVideos(shop.id, playlistName, limit);
   }
 
+  // Last resort: alphabetically-first playlist
   if (items.length === 0) {
     items = await getDefaultPlaylistVideos(shop.id, limit);
   }
