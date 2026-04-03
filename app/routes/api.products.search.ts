@@ -20,23 +20,38 @@ function normalizeProducts(raw: any[]) {
   }));
 }
 
+async function tryGraphQL(
+  shopDomain: string,
+  accessToken: string,
+  gqlQuery: string,
+  variables: Record<string, unknown>,
+): Promise<Response | null> {
+  try {
+    const response = await fetch(`https://${shopDomain}/admin/api/2025-07/graphql.json`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": accessToken,
+      },
+      body: JSON.stringify({ query: gqlQuery, variables }),
+    });
+    const payload: any = await response.json();
+    if (response.ok && !payload?.errors) {
+      const edges = payload?.data?.products?.edges || [];
+      return Response.json({ products: normalizeProducts(edges.map((e: any) => e.node)) });
+    }
+  } catch {
+    // ignore – caller will fall through to next candidate
+  }
+  return null;
+}
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
     const url = new URL(request.url);
     const query = (url.searchParams.get("q") || "").trim();
-
-    const { session, shop, admin } = await requireShop(request);
-    let shopDomain = shop?.shopDomain || session?.shop || "";
-
-    if (!shopDomain) {
-      return Response.json(
-        {
-          products: [],
-          error: "No connected Shopify store found. Open the app once in Shopify Admin to sync the store session.",
-        },
-        { status: 401 },
-      );
-    }
+    // shopParam is passed by the page loader (authenticated server-side) so we trust it.
+    const shopParam = (url.searchParams.get("shop") || "").trim().toLowerCase();
 
     const gqlQuery = `
       query SearchProducts($query: String!) {
@@ -60,7 +75,47 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       query: query ? `${query} status:ACTIVE` : "status:ACTIVE",
     };
 
-    // 1) Primary path: authenticated admin context from the current request.
+    // 1) Fast path: shopParam was provided by the authenticated page loader.
+    if (shopParam && shopParam !== DEV_PLACEHOLDER) {
+      const shopRow = await prisma.shop.findFirst({
+        where: {
+          shopDomain: shopParam,
+          uninstalledAt: null,
+          NOT: { accessToken: "dev-token" },
+        },
+        select: { shopDomain: true, accessToken: true },
+      });
+
+      if (!shopRow?.accessToken) {
+        // Try session table as fallback for this shop.
+        const sessionRow = await prisma.session.findFirst({
+          where: { shop: shopParam, isOnline: false, accessToken: { not: "" } },
+          select: { shop: true, accessToken: true },
+        });
+        if (sessionRow) {
+          const result = await tryGraphQL(sessionRow.shop, sessionRow.accessToken, gqlQuery, variables);
+          if (result) return result;
+        }
+      } else {
+        const result = await tryGraphQL(shopRow.shopDomain, shopRow.accessToken, gqlQuery, variables);
+        if (result) return result;
+      }
+    }
+
+    // 2) Fallback: authenticated admin context from the current request.
+    const { session, shop, admin } = await requireShop(request);
+    const shopDomain = shop?.shopDomain || session?.shop || "";
+
+    if (!shopDomain) {
+      return Response.json(
+        {
+          products: [],
+          error: "No connected Shopify store found. Open the app once in Shopify Admin to sync the store session.",
+        },
+        { status: 401 },
+      );
+    }
+
     if (admin) {
       try {
         const response = await admin.graphql(gqlQuery, { variables });
@@ -74,7 +129,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     }
 
-    // 2) Fallback path: try real credentials from Shop + Session tables.
+    // 3) Last resort: try all real credentials from Shop + Session tables.
     const candidates: CredentialsCandidate[] = [];
 
     if (

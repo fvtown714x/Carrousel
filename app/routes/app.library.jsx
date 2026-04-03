@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
+import { useLoaderData } from "react-router";
 import { Banner, BlockStack, Button, ButtonGroup, Card, Modal, Page } from "@shopify/polaris";
 import { getEmbeddedHeaders } from "../utils/embedded-auth.client";
+import { requireShop } from "../utils/requireShop.server";
+
+export const loader = async ({ request }) => {
+  const { shop } = await requireShop(request);
+  return { shopDomain: shop?.shopDomain || "" };
+};
 
 function createTimeoutSignal(timeoutMs) {
   const controller = new AbortController();
@@ -80,6 +87,7 @@ async function requestJsonWithFallback({
 }
 
 export default function ContentLibrary() {
+  const { shopDomain } = useLoaderData();
   const [openModal, setOpenModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadTab, setUploadTab] = useState("upload");
@@ -331,8 +339,9 @@ export default function ContentLibrary() {
     setProductsLoading(true);
     setTagError("");
     try {
+      const shopParam = shopDomain ? `&shop=${encodeURIComponent(shopDomain)}` : "";
       const result = await xhrRequest({
-        url: `/api/products/search?q=${encodeURIComponent(query)}`,
+        url: `/api/products/search?q=${encodeURIComponent(query)}${shopParam}`,
         method: "GET",
         timeoutMs: 15000,
       });
