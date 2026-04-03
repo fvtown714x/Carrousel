@@ -227,7 +227,10 @@ export default function ContentLibrary() {
         label: "finalize",
         urls: [finalizeEndpoint],
         method: "POST",
-        body: new URLSearchParams({ result: JSON.stringify(cloudinaryPayload) }),
+        body: new URLSearchParams({
+          result: JSON.stringify(cloudinaryPayload),
+          originalFileName: selectedFile.name || "",
+        }),
         timeoutMs: 15000,
       });
 

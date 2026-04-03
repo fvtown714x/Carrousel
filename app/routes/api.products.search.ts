@@ -2,6 +2,8 @@ import type { LoaderFunctionArgs } from "react-router";
 import { requireShop } from "../utils/requireShop.server";
 import prisma from "../db.server";
 
+const DEV_PLACEHOLDER = "dev-shop.myshopify.com";
+
 function normalizeProducts(raw: any[]) {
   return raw.map((node) => ({
     id: node.id,
@@ -59,7 +61,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       response = await admin.graphql(gqlQuery, { variables });
       payload = await response.json();
     } else {
-      const DEV_PLACEHOLDER = "dev-shop.myshopify.com";
       let tokenShop =
         shop && shop.shopDomain !== DEV_PLACEHOLDER && shop.accessToken !== "dev-token"
           ? shop
@@ -74,6 +75,29 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           },
           orderBy: { updatedAt: "desc" },
         });
+      }
+
+      // Last fallback: recover real credentials from session storage.
+      if (!tokenShop?.shopDomain || !tokenShop.accessToken || tokenShop.accessToken === "dev-token") {
+        const sessionCreds = await prisma.session.findFirst({
+          where: {
+            shop: { not: DEV_PLACEHOLDER },
+            accessToken: { not: "" },
+          },
+          orderBy: [{ isOnline: "asc" }, { expires: "desc" }],
+          select: {
+            shop: true,
+            accessToken: true,
+          },
+        });
+
+        if (sessionCreds?.shop && sessionCreds.accessToken) {
+          tokenShop = {
+            ...(tokenShop || shop),
+            shopDomain: sessionCreds.shop,
+            accessToken: sessionCreds.accessToken,
+          } as typeof shop;
+        }
       }
 
       if (!tokenShop?.shopDomain || !tokenShop.accessToken) {

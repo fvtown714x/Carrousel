@@ -45,6 +45,10 @@ function normalizeMediaType(value: string | null) {
   return value === "image" ? "image" : "video";
 }
 
+function titleFromFileName(fileName: string) {
+  return String(fileName || "").replace(/\.[^/.]+$/, "").trim() || "Untitled media";
+}
+
 async function buildSignedUpload(shopId: string, mediaType: "video" | "image") {
   const publicId = `shopify-${shopId}-${Date.now()}`;
   const timestamp = Math.round(new Date().getTime() / 1000);
@@ -127,6 +131,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const video = await prisma.video.create({
         data: {
           shopId: shop.id,
+          title: titleFromFileName(file.name),
           status: "READY",
           type,
           originalUrl: result.secure_url,

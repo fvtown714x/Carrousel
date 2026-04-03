@@ -21,13 +21,31 @@ export function buildVideoThumbnailUrl(result: any) {
   return withTransformation.replace(/\.(mp4|mov|webm|m4v|avi|mkv)(\?.*)?$/i, ".jpg$2");
 }
 
-export function buildMediaRecordData(shopId: string, result: any) {
+function stripExtension(fileName: string) {
+  return fileName.replace(/\.[^/.]+$/, "").trim();
+}
+
+function resolveMediaTitle(result: any, originalFileName?: string | null) {
+  const fromUpload = stripExtension(String(originalFileName || ""));
+  if (fromUpload) return fromUpload;
+
+  const fromCloudinary = stripExtension(String(result?.original_filename || ""));
+  if (fromCloudinary) return fromCloudinary;
+
+  const fromPublicId = stripExtension(String(result?.public_id || "").split("/").pop() || "");
+  if (fromPublicId) return fromPublicId;
+
+  return "Untitled media";
+}
+
+export function buildMediaRecordData(shopId: string, result: any, originalFileName?: string | null) {
   const isVideo = isLikelyVideo(result);
 
   return {
     shopId,
     status: "READY" as const,
     type: isVideo ? "VIDEO" as const : "IMAGE" as const,
+    title: resolveMediaTitle(result, originalFileName),
     originalUrl: result.secure_url,
     thumbnailUrl: isVideo ? buildVideoThumbnailUrl(result) : result.secure_url,
     duration: Math.round(result.duration || 0),

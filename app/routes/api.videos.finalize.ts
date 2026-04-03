@@ -28,6 +28,7 @@ export const action: ActionFunction = async ({ request }) => {
     logFinalize(`[${requestId}] shopId=${shop.id}`);
     const form = await request.formData();
     const cloudinaryResult = form.get("result");
+    const originalFileName = String(form.get("originalFileName") || "").trim();
 
     if (!cloudinaryResult || typeof cloudinaryResult !== "string") {
       logFinalize(`[${requestId}] missing result field`);
@@ -40,7 +41,7 @@ export const action: ActionFunction = async ({ request }) => {
     const result = JSON.parse(cloudinaryResult);
     logFinalize(`[${requestId}] cloudinary secure_url=${result?.secure_url || "n/a"}`);
     const isVideo = isLikelyVideo(result);
-    const mediaData = buildMediaRecordData(shop.id, result);
+    const mediaData = buildMediaRecordData(shop.id, result, originalFileName || null);
 
     logFinalize(
       `[${requestId}] detected type=${mediaData.type} resource_type=${result?.resource_type || "n/a"} format=${result?.format || "n/a"}`

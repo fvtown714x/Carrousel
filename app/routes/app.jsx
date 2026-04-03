@@ -2,6 +2,7 @@ import { Outlet, useLoaderData, useRouteError, useLocation } from "react-router"
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { AppProvider as ShopifyAppProvider } from "@shopify/shopify-app-react-router/react";
+import { NavMenu } from "@shopify/app-bridge-react";
 import { AppProvider } from "@shopify/polaris";
 
 export const loader = async ({ request }) => {
@@ -22,21 +23,15 @@ export default function AppLayout() {
   return (
     <ShopifyAppProvider isEmbeddedApp apiKey={apiKey}>
       <AppProvider i18n={{}}>
-        <ui-nav-menu>
+        <NavMenu>
           <a href={`/app${search}`} rel="home">
             Dashboard
           </a>
-          <a href={`/app/library${search}`}>Content Library</a>
+          <a href={`/app/library${search}`}>Media</a>
           <a href={`/app/playlists${search}`}>Playlists</a>
           <a href={`/app/widgets${search}`}>Widgets</a>
           <a href={`/app/settings${search}`}>Settings</a>
-          <a href="shopify://admin/products" target="_top" rel="noreferrer">
-            Shopify Products
-          </a>
-          <a href="shopify://admin/orders" target="_top" rel="noreferrer">
-            Shopify Orders
-          </a>
-        </ui-nav-menu>
+        </NavMenu>
         <Outlet />
       </AppProvider>
     </ShopifyAppProvider>
