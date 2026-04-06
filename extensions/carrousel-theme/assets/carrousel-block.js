@@ -150,10 +150,18 @@
   /* ── render strip ── */
   function renderItems(root, items, heading) {
     var cards = items.map(function (item, idx) {
+      var linked = item.linkedProduct || null;
+      var metaHtml = linked
+        ? '<div class="crsl-card__meta">' +
+            '<div class="crsl-card__meta-name">' + esc(linked.title || 'Product') + '</div>' +
+            '<div class="crsl-card__meta-price">' + esc(normalizePrice(linked.price || '')) + '</div>' +
+          '</div>'
+        : '';
+
       var mediaHtml = item.type === 'VIDEO'
         ? '<video class="crsl-card__media" src="' + esc(item.url || '') +
           '" poster="' + esc(item.thumbnail || '') +
-          '" autoplay loop muted playsinline preload="auto"></video>'
+          '" loop muted playsinline preload="metadata"></video>'
         : '<img class="crsl-card__media" loading="lazy" src="' +
           esc(item.thumbnail || item.url || '') + '" alt="' + esc(item.title) + '">';
 
@@ -163,6 +171,7 @@
           '<div class="crsl-card__play" aria-hidden="true">' +
             '<svg width="15" height="15" viewBox="0 0 24 24" fill="white"><polygon points="5,3 19,12 5,21"/></svg>' +
           '</div>' +
+          metaHtml +
         '</button>'
       );
     }).join('');
@@ -171,28 +180,106 @@
       (heading ? '<h3 class="crsl-heading">' + esc(heading) + '</h3>' : '') +
       '<div class="crsl-viewport">' +
         '<div class="crsl-track">' + cards + '</div>' +
+      '</div>' +
+      '<div class="crsl-controls" aria-label="Carousel controls">' +
+        '<button type="button" class="crsl-controls__btn crsl-controls__btn--prev" aria-label="Previous slide">' +
+          '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>' +
+        '</button>' +
+        '<button type="button" class="crsl-controls__btn crsl-controls__btn--next" aria-label="Next slide">' +
+          '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>' +
+        '</button>' +
       '</div>';
 
+    var cardsEls = Array.prototype.slice.call(root.querySelectorAll('.crsl-card'));
+    var viewport = root.querySelector('.crsl-viewport');
+    var prevBtn = root.querySelector('.crsl-controls__btn--prev');
+    var nextBtn = root.querySelector('.crsl-controls__btn--next');
+    var currentIndex = 0;
+    var scrollTimer = null;
+
+    function syncCenterPlayback() {
+      cardsEls.forEach(function (card, idx) {
+        var video = card.querySelector('video.crsl-card__media');
+        if (!video) return;
+        if (idx === currentIndex) {
+          video.muted = true;
+          video.play().catch(function () {});
+        } else {
+          video.pause();
+        }
+      });
+    }
+
+    function updateActiveState(index) {
+      currentIndex = index;
+      cardsEls.forEach(function (card, idx) {
+        card.classList.toggle('crsl-card--active', idx === currentIndex);
+      });
+      syncCenterPlayback();
+    }
+
+    function centerIndex(index, smooth) {
+      var target = cardsEls[index];
+      if (!target) return;
+      updateActiveState(index);
+      target.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', inline: 'center', block: 'nearest' });
+    }
+
+    function closestToCenterIndex() {
+      var viewportRect = viewport.getBoundingClientRect();
+      var viewportCenter = viewportRect.left + viewportRect.width / 2;
+      var bestIdx = currentIndex;
+      var bestDist = Infinity;
+
+      cardsEls.forEach(function (card, idx) {
+        var rect = card.getBoundingClientRect();
+        var center = rect.left + rect.width / 2;
+        var dist = Math.abs(center - viewportCenter);
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIdx = idx;
+        }
+      });
+
+      return bestIdx;
+    }
+
+    prevBtn.addEventListener('click', function () {
+      var nextIndex = (currentIndex - 1 + cardsEls.length) % cardsEls.length;
+      centerIndex(nextIndex, true);
+    });
+
+    nextBtn.addEventListener('click', function () {
+      var nextIndex = (currentIndex + 1) % cardsEls.length;
+      centerIndex(nextIndex, true);
+    });
+
+    viewport.addEventListener('scroll', function () {
+      if (scrollTimer) clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(function () {
+        updateActiveState(closestToCenterIndex());
+      }, 80);
+    }, { passive: true });
+
     /* click → lightbox */
-    root.querySelectorAll('.crsl-card').forEach(function (btn) {
+    cardsEls.forEach(function (btn) {
       btn.addEventListener('click', function () {
-        openLightbox(items[parseInt(btn.dataset.idx, 10)]);
+        var idx = parseInt(btn.dataset.idx, 10);
+        if (idx !== currentIndex) {
+          centerIndex(idx, true);
+          return;
+        }
+        openLightbox(items[idx]);
       });
     });
 
-    /* IntersectionObserver: play only visible strip videos */
-    if ('IntersectionObserver' in window) {
-      var io = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) {
-          var v = entry.target;
-          if (entry.isIntersecting) { v.play().catch(function () {}); }
-          else { v.pause(); }
-        });
-      }, { threshold: 0.2 });
+    centerIndex(Math.floor(items.length / 2), false);
 
-      root.querySelectorAll('.crsl-card__media').forEach(function (el) {
-        if (el.tagName === 'VIDEO') io.observe(el);
+    if ('ResizeObserver' in window) {
+      var ro = new ResizeObserver(function () {
+        centerIndex(currentIndex, false);
       });
+      ro.observe(viewport);
     }
   }
 

@@ -21,7 +21,7 @@
 /* ── scroll viewport ── */
 .crsl-viewport {
   overflow-x: auto;
-  padding: 4px 24px 10px;
+  padding: 12px 24px 14px;
   scroll-behavior: smooth;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
@@ -35,14 +35,14 @@
 /* ── flex track ── */
 .crsl-track {
   display: flex;
-  gap: 10px;
+  gap: 14px;
   width: max-content;
 }
 
 /* ── card ── */
 .crsl-card {
   appearance: none;
-  background: #111;
+  background: #c7c7c7;
   border: none;
   border-radius: var(--carrousel-radius, 14px);
   cursor: pointer;
@@ -50,23 +50,30 @@
   overflow: hidden;
   padding: 0;
   position: relative;
-  scroll-snap-align: start;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  scroll-snap-align: center;
+  transition: transform 0.24s ease, box-shadow 0.24s ease, opacity 0.24s ease;
   width: 190px;
+  transform: scale(0.94);
+  opacity: 0.84;
 }
 
-.crsl-card:hover {
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
-  transform: translateY(-2px);
+.crsl-card--active {
+  transform: scale(1.03);
+  opacity: 1;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.2);
 }
 
 .crsl-card:active {
-  transform: scale(0.97) translateY(0);
+  transform: scale(0.96);
 }
 
 @media screen and (min-width: 750px) {
   .crsl-card {
     width: 232px;
+  }
+
+  .crsl-card--active {
+    transform: scale(1.06);
   }
 }
 
@@ -96,6 +103,70 @@
   top: 50%;
   transform: translate(-50%, -50%);
   width: 46px;
+}
+
+.crsl-card--active .crsl-card__play {
+  background: rgba(0, 0, 0, 0.34);
+}
+
+.crsl-card__meta {
+  background: #fff;
+  border-radius: 8px;
+  bottom: 10px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+  color: #151515;
+  left: 10px;
+  max-width: calc(100% - 20px);
+  padding: 8px 10px;
+  position: absolute;
+  text-align: left;
+}
+
+.crsl-card__meta-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.crsl-card__meta-price {
+  font-size: 0.78rem;
+  margin-top: 4px;
+  opacity: 0.9;
+}
+
+.crsl-controls {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  padding: 4px 20px 0;
+}
+
+.crsl-controls__btn {
+  align-items: center;
+  appearance: none;
+  background: #dadada;
+  border: none;
+  border-radius: 999px;
+  color: #1b1b1b;
+  cursor: pointer;
+  display: inline-flex;
+  height: 44px;
+  justify-content: center;
+  transition: transform 0.12s ease, background 0.12s ease;
+  width: 44px;
+}
+
+.crsl-controls__btn:hover {
+  background: #cfcfcf;
+  transform: translateY(-1px);
+}
+
+.crsl-controls__btn:active {
+  transform: translateY(0);
 }
 
 /* ── empty state ── */
