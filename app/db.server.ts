@@ -7,16 +7,17 @@ declare global {
 }
 
 let prisma: PrismaClient;
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is required. Configure a PostgreSQL connection string.");
+}
 
 if (process.env.NODE_ENV === "production") {
-  prisma = new PrismaClient({
-    datasourceUrl: process.env.DATABASE_URL,
-  });
+  prisma = new PrismaClient({ datasourceUrl: databaseUrl });
 } else {
   if (!global.__prisma) {
-    global.__prisma = new PrismaClient({
-      datasourceUrl: "file:dev.sqlite",
-    });
+    global.__prisma = new PrismaClient({ datasourceUrl: databaseUrl });
   }
   prisma = global.__prisma;
 }

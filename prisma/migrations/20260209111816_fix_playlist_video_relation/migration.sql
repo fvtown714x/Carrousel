@@ -1,12 +1,31 @@
 -- CreateTable
+DO $$ BEGIN
+    CREATE TYPE "VideoStatus" AS ENUM ('PROCESSING', 'READY', 'FAILED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE "AutoplayMode" AS ENUM ('VIEWPORT', 'HOVER');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+    CREATE TYPE "SubscriptionStatus" AS ENUM ('ACTIVE', 'PAUSED', 'CANCELLED');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- CreateTable
 CREATE TABLE "Shop" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "shopDomain" TEXT NOT NULL,
     "accessToken" TEXT NOT NULL,
-    "installedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "uninstalledAt" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "installedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "uninstalledAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL
 );
 
 -- CreateTable
@@ -16,12 +35,12 @@ CREATE TABLE "Video" (
     "title" TEXT,
     "description" TEXT,
     "duration" INTEGER,
-    "status" TEXT NOT NULL DEFAULT 'PROCESSING',
+    "status" "VideoStatus" NOT NULL DEFAULT 'PROCESSING',
     "streamId" TEXT,
     "originalUrl" TEXT,
     "thumbnailUrl" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Video_shopId_fkey" FOREIGN KEY ("shopId") REFERENCES "Shop" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -32,7 +51,7 @@ CREATE TABLE "VideoAsset" (
     "resolution" TEXT NOT NULL,
     "format" TEXT NOT NULL,
     "url" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "VideoAsset_videoId_fkey" FOREIGN KEY ("videoId") REFERENCES "Video" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -42,8 +61,8 @@ CREATE TABLE "Playlist" (
     "shopId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "isPublished" BOOLEAN NOT NULL DEFAULT false,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "Playlist_shopId_fkey" FOREIGN KEY ("shopId") REFERENCES "Shop" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -63,7 +82,7 @@ CREATE TABLE "VideoProductTag" (
     "videoId" TEXT NOT NULL,
     "shopifyProductId" TEXT NOT NULL,
     "shopifyVariantId" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "VideoProductTag_videoId_fkey" FOREIGN KEY ("videoId") REFERENCES "Video" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -75,7 +94,7 @@ CREATE TABLE "VideoAnalytics" (
     "plays" INTEGER NOT NULL DEFAULT 0,
     "productClicks" INTEGER NOT NULL DEFAULT 0,
     "revenue" REAL NOT NULL DEFAULT 0,
-    "updatedAt" DATETIME NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "VideoAnalytics_videoId_fkey" FOREIGN KEY ("videoId") REFERENCES "Video" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -89,9 +108,9 @@ CREATE TABLE "ThemeSettings" (
     "buttonStyle" TEXT NOT NULL,
     "modalBackground" TEXT NOT NULL,
     "autoplay" BOOLEAN NOT NULL DEFAULT true,
-    "autoplayMode" TEXT NOT NULL DEFAULT 'VIEWPORT',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "autoplayMode" "AutoplayMode" NOT NULL DEFAULT 'VIEWPORT',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "ThemeSettings_shopId_fkey" FOREIGN KEY ("shopId") REFERENCES "Shop" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -100,11 +119,11 @@ CREATE TABLE "BillingSubscription" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "shopId" TEXT NOT NULL,
     "planName" TEXT NOT NULL,
-    "status" TEXT NOT NULL,
+    "status" "SubscriptionStatus" NOT NULL,
     "shopifyChargeId" TEXT,
-    "currentPeriodEnd" DATETIME NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "currentPeriodEnd" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "BillingSubscription_shopId_fkey" FOREIGN KEY ("shopId") REFERENCES "Shop" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
@@ -114,8 +133,8 @@ CREATE TABLE "UsageMetrics" (
     "shopId" TEXT NOT NULL,
     "monthlyViews" INTEGER NOT NULL DEFAULT 0,
     "viewLimit" INTEGER NOT NULL DEFAULT 10000,
-    "resetAt" DATETIME NOT NULL,
-    "updatedAt" DATETIME NOT NULL,
+    "resetAt" TIMESTAMP(3) NOT NULL,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
     CONSTRAINT "UsageMetrics_shopId_fkey" FOREIGN KEY ("shopId") REFERENCES "Shop" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
