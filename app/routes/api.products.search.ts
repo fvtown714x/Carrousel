@@ -58,20 +58,27 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const query = (url.searchParams.get("q") || "").trim();
   const shopParam = (url.searchParams.get("shop") || "").trim();
 
+  // Also accept the Shopify-injected ?shop= from the embedded app URL
+  // (extracted from Referer or X-Shopify-Shop-Domain header when JS passes it)
+  const shopHeader = (request.headers.get("x-shopify-shop-domain") || "").trim();
+  const effectiveShop = (shopParam && shopParam !== DEV_PLACEHOLDER)
+    ? shopParam
+    : (shopHeader && shopHeader !== DEV_PLACEHOLDER ? shopHeader : "");
+
   const variables = { query: query ? `${query} status:ACTIVE` : "status:ACTIVE" };
 
   // 1) Best path: use the Shopify SDK's unauthenticated.admin() which reads the
-  //    stored offline session directly from DB. shopParam comes from the page
+  //    stored offline session directly from DB. effectiveShop comes from the page
   //    loader which ran in a fully-authenticated server context.
-  if (shopParam && shopParam !== DEV_PLACEHOLDER) {
+  if (effectiveShop) {
     try {
-      const { admin } = await unauthenticated.admin(shopParam);
+      const { admin } = await unauthenticated.admin(effectiveShop);
       const response = await admin.graphql(GQL_QUERY, { variables });
       const payload: any = await response.json();
       const edges = payload?.data?.products?.edges || [];
       return Response.json({ products: normalizeProducts(edges.map((e: any) => e.node)) });
     } catch (err) {
-      console.warn("[api.products.search] unauthenticated.admin failed for", shopParam, err);
+      console.warn("[api.products.search] unauthenticated.admin failed for", effectiveShop, err);
     }
   }
 

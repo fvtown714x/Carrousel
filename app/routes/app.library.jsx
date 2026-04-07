@@ -5,8 +5,24 @@ import { getEmbeddedHeaders } from "../utils/embedded-auth.client";
 import { requireShop } from "../utils/requireShop.server";
 
 export const loader = async ({ request }) => {
-  const { shop } = await requireShop(request);
-  return { shopDomain: shop?.shopDomain || "" };
+  // 1) URL ?shop= param — always present in embedded Shopify Admin requests
+  const urlShop = new URL(request.url).searchParams.get("shop") || "";
+
+  // 2) Authenticated session (works when session is in DB)
+  try {
+    const { shop } = await requireShop(request);
+    const shopDomain = shop?.shopDomain || "";
+    if (shopDomain && shopDomain !== "dev-shop.myshopify.com") {
+      return { shopDomain };
+    }
+  } catch (_) {}
+
+  // 3) Fallback: use URL param directly
+  if (urlShop && urlShop !== "dev-shop.myshopify.com") {
+    return { shopDomain: urlShop };
+  }
+
+  return { shopDomain: urlShop || "" };
 };
 
 function createTimeoutSignal(timeoutMs) {
@@ -339,7 +355,13 @@ export default function ContentLibrary() {
     setProductsLoading(true);
     setTagError("");
     try {
-      const shopParam = shopDomain ? `&shop=${encodeURIComponent(shopDomain)}` : "";
+      // Prefer loader shopDomain; fall back to ?shop= already in the current URL
+      // (Shopify Admin always injects ?shop=xxx.myshopify.com in the iframe URL)
+      const pageShop = new URLSearchParams(window.location.search).get("shop") || "";
+      const resolvedShop = (shopDomain && shopDomain !== "dev-shop.myshopify.com")
+        ? shopDomain
+        : pageShop;
+      const shopParam = resolvedShop ? `&shop=${encodeURIComponent(resolvedShop)}` : "";
       const result = await xhrRequest({
         url: `/api/products/search?q=${encodeURIComponent(query)}${shopParam}`,
         method: "GET",
