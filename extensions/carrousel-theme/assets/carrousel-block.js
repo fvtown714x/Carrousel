@@ -153,8 +153,13 @@
       var linked = item.linkedProduct || null;
       var metaHtml = linked
         ? '<div class="crsl-card__meta">' +
-            '<div class="crsl-card__meta-name">' + esc(linked.title || 'Product') + '</div>' +
-            '<div class="crsl-card__meta-price">' + esc(normalizePrice(linked.price || '')) + '</div>' +
+            '<div class="crsl-card__meta-image-wrap">' +
+              '<img class="crsl-card__meta-image" src="' + esc(linked.image || item.thumbnail || item.url || '') + '" alt="' + esc(linked.title || 'Product') + '">' +
+            '</div>' +
+            '<div class="crsl-card__meta-copy">' +
+              '<div class="crsl-card__meta-name">' + esc(linked.title || 'Product') + '</div>' +
+              '<div class="crsl-card__meta-price">' + esc(normalizePrice(linked.price || '')) + '</div>' +
+            '</div>' +
           '</div>'
         : '';
 
