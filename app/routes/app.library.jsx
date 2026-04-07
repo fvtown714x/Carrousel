@@ -623,9 +623,16 @@ function MediaTable({ media, selectedIds, onToggleSelect, onTagProducts }) {
           <span style={{ color: "#374151", fontSize: "14px" }}>{item.type === "VIDEO" ? "Video" : "Image"}</span>
           <div style={{ alignItems: "center", display: "flex", gap: "8px", justifyContent: "space-between" }}>
             <span style={{ color: "#0f766e", fontSize: "14px", fontWeight: 600 }}>Ready</span>
-            <button type="button" onClick={() => onTagProducts(item)} style={{ background: "#111827", border: "none", borderRadius: "999px", color: "#fff", cursor: "pointer", fontSize: "12px", fontWeight: 600, padding: "6px 10px" }}>
-              Tag Products
-            </button>
+            {item.taggedProductsCount > 0 ? (
+              <button type="button" onClick={() => onTagProducts(item)} style={{ alignItems: "center", background: "#ffffff", border: "1px solid #d1d5db", borderRadius: "999px", color: "#111827", cursor: "pointer", display: "inline-flex", fontSize: "12px", fontWeight: 600, gap: "6px", padding: "6px 10px" }}>
+                <span style={{ background: "#111827", borderRadius: "999px", display: "inline-block", height: "6px", width: "6px" }} />
+                {item.taggedProductsCount} {item.taggedProductsCount === 1 ? "product" : "products"} tagged
+              </button>
+            ) : (
+              <button type="button" onClick={() => onTagProducts(item)} style={{ background: "#111827", border: "none", borderRadius: "999px", color: "#fff", cursor: "pointer", fontSize: "12px", fontWeight: 600, padding: "6px 10px" }}>
+                Tag Products
+              </button>
+            )}
           </div>
         </div>
       ))}
@@ -716,18 +723,45 @@ function MediaCard({ item, isSelected, onToggleSelect, onTagProducts }) {
 
         )}
 
-        {taggedCount > 0 && (
-          <div style={{ bottom: "12px", left: "12px", position: "absolute" }}>
-            <span style={{ alignItems: "center", background: "#ffffff", borderRadius: "999px", color: "#111827", display: "inline-flex", fontSize: "12px", fontWeight: 600, gap: "6px", padding: "6px 10px" }}>
-              <span style={{ background: "#111827", borderRadius: "999px", display: "inline-block", height: "6px", width: "6px" }} />
-              {taggedLabel}
-            </span>
-          </div>
-        )}
-
-        <div style={{ bottom: "12px", right: "12px", position: "absolute" }}>
-          <button type="button" onClick={() => onTagProducts(item)} style={{ background: "rgba(17, 24, 39, 0.84)", border: "none", borderRadius: "999px", color: "#fff", cursor: "pointer", fontSize: "12px", fontWeight: 600, padding: "7px 12px" }}>
-            Tag Products
+        <div style={{ bottom: "12px", left: "12px", position: "absolute" }}>
+          <button
+            type="button"
+            onClick={() => onTagProducts(item)}
+            style={
+              taggedCount > 0
+                ? {
+                    alignItems: "center",
+                    background: "#ffffff",
+                    border: "1px solid rgba(17, 24, 39, 0.08)",
+                    borderRadius: "999px",
+                    color: "#111827",
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    gap: "6px",
+                    padding: "6px 10px",
+                  }
+                : {
+                    background: "rgba(17, 24, 39, 0.84)",
+                    border: "none",
+                    borderRadius: "999px",
+                    color: "#fff",
+                    cursor: "pointer",
+                    fontSize: "12px",
+                    fontWeight: 600,
+                    padding: "7px 12px",
+                  }
+            }
+          >
+            {taggedCount > 0 ? (
+              <>
+                <span style={{ background: "#111827", borderRadius: "999px", display: "inline-block", height: "6px", width: "6px" }} />
+                {taggedLabel}
+              </>
+            ) : (
+              "Tag Products"
+            )}
           </button>
         </div>
       </div>
