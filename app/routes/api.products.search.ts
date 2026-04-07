@@ -194,6 +194,60 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     console.warn("[api.products.search] DB token fallback failed", err);
   }
 
+  // 5) Development fallback: return mock products if this is a dev shop
+  if (shopParam === DEV_PLACEHOLDER) {
+    console.log("[api.products.search] Returning mock products for dev shop");
+    const mockQuery = (query || "").toLowerCase();
+    const mockProducts = [
+      {
+        id: "gid://shopify/Product/1",
+        title: "Premium Wireless Headphones",
+        status: "ACTIVE",
+        handle: "wireless-headphones",
+        image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop",
+      },
+      {
+        id: "gid://shopify/Product/2",
+        title: "Vintage Camera Collection",
+        status: "ACTIVE",
+        handle: "vintage-camera",
+        image: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&h=500&fit=crop",
+      },
+      {
+        id: "gid://shopify/Product/3",
+        title: "Smartwatch Pro Max",
+        status: "ACTIVE",
+        handle: "smartwatch-pro",
+        image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop",
+      },
+      {
+        id: "gid://shopify/Product/4",
+        title: "Designer Sunglasses",
+        status: "ACTIVE",
+        handle: "designer-sunglasses",
+        image: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=500&h=500&fit=crop",
+      },
+      {
+        id: "gid://shopify/Product/5",
+        title: "Premium Coffee Maker",
+        status: "ACTIVE",
+        handle: "coffee-maker",
+        image: "https://images.unsplash.com/photo-1517668808822-9ebb02ae2a0e?w=500&h=500&fit=crop",
+      },
+    ];
+
+    // Filter by search query if provided
+    const filtered = mockQuery
+      ? mockProducts.filter(
+          (p) =>
+            p.title.toLowerCase().includes(mockQuery) ||
+            p.handle.toLowerCase().includes(mockQuery),
+        )
+      : mockProducts;
+
+    return Response.json({ products: filtered });
+  }
+
   return Response.json(
     {
       products: [],
