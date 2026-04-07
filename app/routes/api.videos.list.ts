@@ -24,7 +24,14 @@ export const loader = async ({ request }) => {
     },
     orderBy: {
       createdAt: "desc"
-    }
+    },
+    include: {
+      _count: {
+        select: {
+          productTags: true,
+        },
+      },
+    },
   });
 
   const media = videos.map((v) => {
@@ -34,6 +41,7 @@ export const loader = async ({ request }) => {
     id: v.id,
     type: inferredType,
     url: v.originalUrl,
+    taggedProductsCount: v._count?.productTags || 0,
     thumbnail:
       v.thumbnailUrl || (inferredType === "VIDEO" ? buildListThumbnail(v.originalUrl) : v.originalUrl)
     };

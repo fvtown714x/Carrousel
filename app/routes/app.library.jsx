@@ -613,6 +613,11 @@ function MediaTable({ media, selectedIds, onToggleSelect, onTagProducts }) {
               <div style={{ color: "#6b7280", fontSize: "12px", marginTop: "3px" }}>
                 {item.type === "VIDEO" ? "Video asset" : "Image asset"}
               </div>
+              {item.taggedProductsCount > 0 && (
+                <div style={{ color: "#111827", fontSize: "12px", fontWeight: 600, marginTop: "5px" }}>
+                  {item.taggedProductsCount} {item.taggedProductsCount === 1 ? "product" : "products"} tagged
+                </div>
+              )}
             </div>
           </div>
           <span style={{ color: "#374151", fontSize: "14px" }}>{item.type === "VIDEO" ? "Video" : "Image"}</span>
@@ -632,6 +637,8 @@ function MediaCard({ item, isSelected, onToggleSelect, onTagProducts }) {
 
   const [hover, setHover] = useState(false);
   const title = getMediaTitle(item);
+  const taggedCount = Number(item.taggedProductsCount || 0);
+  const taggedLabel = `${taggedCount} ${taggedCount === 1 ? "product" : "products"} tagged`;
 
   return (
 
@@ -709,7 +716,16 @@ function MediaCard({ item, isSelected, onToggleSelect, onTagProducts }) {
 
         )}
 
-        <div style={{ bottom: "12px", left: "12px", position: "absolute" }}>
+        {taggedCount > 0 && (
+          <div style={{ bottom: "12px", left: "12px", position: "absolute" }}>
+            <span style={{ alignItems: "center", background: "#ffffff", borderRadius: "999px", color: "#111827", display: "inline-flex", fontSize: "12px", fontWeight: 600, gap: "6px", padding: "6px 10px" }}>
+              <span style={{ background: "#111827", borderRadius: "999px", display: "inline-block", height: "6px", width: "6px" }} />
+              {taggedLabel}
+            </span>
+          </div>
+        )}
+
+        <div style={{ bottom: "12px", right: "12px", position: "absolute" }}>
           <button type="button" onClick={() => onTagProducts(item)} style={{ background: "rgba(17, 24, 39, 0.84)", border: "none", borderRadius: "999px", color: "#fff", cursor: "pointer", fontSize: "12px", fontWeight: 600, padding: "7px 12px" }}>
             Tag Products
           </button>
