@@ -5,8 +5,10 @@ import { loginErrorMessage } from "./error.server";
 import { AppProvider, Page, Card, FormLayout, TextField, Button, Text, BlockStack } from "@shopify/polaris";
 
 export const loader = async ({ request }) => {
+  const url = new URL(request.url);
+  const shop = (url.searchParams.get("shop") || "").trim();
   const errors = loginErrorMessage(await login(request));
-  return { errors };
+  return { errors, shop };
 };
 
 export const action = async ({ request }) => {
@@ -17,7 +19,7 @@ export const action = async ({ request }) => {
 export default function Auth() {
   const loaderData = useLoaderData();
   const actionData = useActionData();
-  const [shop, setShop] = useState("");
+  const [shop, setShop] = useState(loaderData?.shop || "");
   const { errors } = actionData || loaderData;
 
   return (
