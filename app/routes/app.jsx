@@ -27,22 +27,17 @@ export const loader = async ({ request }) => {
     if (error instanceof Response && error.status >= 300 && error.status < 400) {
       const location = error.headers.get("Location") || "";
       if (location.startsWith("/auth/login")) {
-        try {
-          const loginUrl = new URL(location, requestUrl.origin);
-          if (shop) {
-            loginUrl.searchParams.set("shop", shop);
-          }
-          if (!loginUrl.searchParams.get("shop")) {
-            console.error("[app.loader] Missing shop for auth login redirect", {
-              requestUrl: requestUrl.toString(),
-              referer: request.headers.get("referer") || "",
-            });
-          }
-          throw redirect(loginUrl.pathname + loginUrl.search);
-        } catch (redirectError) {
-          console.error("[app.loader] Failed building auth redirect URL", redirectError);
-          throw error;
+        const loginUrl = new URL(location, requestUrl.origin);
+        if (shop) {
+          loginUrl.searchParams.set("shop", shop);
         }
+        if (!loginUrl.searchParams.get("shop")) {
+          console.error("[app.loader] Missing shop for auth login redirect", {
+            requestUrl: requestUrl.toString(),
+            referer: request.headers.get("referer") || "",
+          });
+        }
+        throw redirect(loginUrl.pathname + loginUrl.search);
       }
     }
 

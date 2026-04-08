@@ -20,6 +20,16 @@ export async function requireShop(request: Request) {
 
     return { session, shop, admin };
   } catch (error) {
+    // Preserve Shopify auth redirects instead of replacing them with dev fallback.
+    if (error instanceof Response && error.status >= 300 && error.status < 400) {
+      throw error;
+    }
+
+    // In production, never fall back to fake dev shop state.
+    if (process.env.NODE_ENV === "production") {
+      throw error;
+    }
+
     console.warn("[requireShop] authenticate.admin failed, using dev fallback", error);
     return requireShopDev();
   }
