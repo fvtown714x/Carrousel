@@ -7,12 +7,20 @@ import { AppProvider, Page, Card, FormLayout, TextField, Button, Text, BlockStac
 export const loader = async ({ request }) => {
   const url = new URL(request.url);
   const shop = (url.searchParams.get("shop") || "").trim();
-  const errors = loginErrorMessage(await login(request));
+  const loginResult = await login(request);
+  if (loginResult instanceof Response) {
+    return loginResult;
+  }
+  const errors = loginErrorMessage(loginResult);
   return { errors, shop };
 };
 
 export const action = async ({ request }) => {
-  const errors = loginErrorMessage(await login(request));
+  const loginResult = await login(request);
+  if (loginResult instanceof Response) {
+    return loginResult;
+  }
+  const errors = loginErrorMessage(loginResult);
   return { errors };
 };
 

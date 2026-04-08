@@ -1,4 +1,4 @@
-import { Outlet, useLoaderData, useRouteError, redirect } from "react-router";
+import { Outlet, useLoaderData, useRouteError } from "react-router";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { AppProvider as ShopifyAppProvider } from "@shopify/shopify-app-react-router/react";
@@ -6,43 +6,7 @@ import { NavMenu } from "@shopify/app-bridge-react";
 import { AppProvider } from "@shopify/polaris";
 
 export const loader = async ({ request }) => {
-  const requestUrl = new URL(request.url);
-  const requestShop = requestUrl.searchParams.get("shop") || "";
-
-  let refererShop = "";
-  try {
-    const referer = request.headers.get("referer") || "";
-    refererShop = referer ? new URL(referer).searchParams.get("shop") || "" : "";
-  } catch {
-    refererShop = "";
-  }
-
-  const shop = requestShop || refererShop;
-
-  try {
-    await authenticate.admin(request);
-  } catch (error) {
-    // If Shopify redirects to /auth/login without shop param, preserve shop
-    // from URL/referer so embedded auth can complete reliably.
-    if (error instanceof Response && error.status >= 300 && error.status < 400) {
-      const location = error.headers.get("Location") || "";
-      if (location.startsWith("/auth/login")) {
-        const loginUrl = new URL(location, requestUrl.origin);
-        if (shop) {
-          loginUrl.searchParams.set("shop", shop);
-        }
-        if (!loginUrl.searchParams.get("shop")) {
-          console.error("[app.loader] Missing shop for auth login redirect", {
-            requestUrl: requestUrl.toString(),
-            referer: request.headers.get("referer") || "",
-          });
-        }
-        throw redirect(loginUrl.pathname + loginUrl.search);
-      }
-    }
-
-    throw error;
-  }
+  await authenticate.admin(request);
 
   return { apiKey: process.env.SHOPIFY_API_KEY || process.env.API_KEY || "" };
 };
