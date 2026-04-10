@@ -16,6 +16,7 @@ type StorefrontItem = {
     image: string | null;
     price: string | null;
     compareAtPrice: string | null;
+    description: string | null;
     url: string;
   } | null;
 };
@@ -53,6 +54,7 @@ const PRODUCT_PREVIEW_QUERY = `
       ... on Product {
         id
         title
+        description
         handle
         featuredImage {
           url
@@ -92,6 +94,7 @@ function mapProductPreviewNodes(nodes: any[]) {
       price: priceAmount && priceCurrency ? `${priceCurrency} ${priceAmount}` : null,
       compareAtPrice:
         compareAmount && compareCurrency ? `${compareCurrency} ${compareAmount}` : null,
+      description: node?.description || null,
       url: `/products/${node.handle}`,
     });
   }
@@ -183,6 +186,9 @@ async function fetchProductPreviewMapViaRest(
           image: product?.image?.src || null,
           price,
           compareAtPrice,
+          description: product?.body_html
+            ? String(product.body_html).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+            : null,
           url: `/products/${product.handle}`,
         } as NonNullable<StorefrontItem["linkedProduct"]>,
       };

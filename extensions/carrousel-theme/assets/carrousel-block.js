@@ -26,6 +26,30 @@
     return String(value).replace(/^([A-Z]{3})\s+/, '$1 ');
   }
 
+  function getDescriptionParagraphs(value) {
+    var text = String(value || '').replace(/\r/g, '\n').trim();
+    if (!text) return [];
+
+    var blocks = text
+      .split(/\n{2,}/)
+      .map(function (part) { return part.trim(); })
+      .filter(Boolean);
+
+    if (blocks.length >= 2) return blocks.slice(0, 2);
+    if (blocks.length === 1) {
+      var splitBySentence = blocks[0]
+        .split(/(?<=[.!?])\s+/)
+        .map(function (part) { return part.trim(); })
+        .filter(Boolean);
+
+      if (splitBySentence.length >= 2) {
+        return [splitBySentence[0], splitBySentence[1]];
+      }
+    }
+
+    return blocks.slice(0, 1);
+  }
+
   function openLightbox(item) {
     closeLightbox();
     document.body.style.overflow = 'hidden';
@@ -38,6 +62,17 @@
     var productPane = '';
 
     if (linked) {
+      var descriptionHtml = '';
+      var descriptionParagraphs = getDescriptionParagraphs(linked.description || '');
+      if (descriptionParagraphs.length > 0) {
+        descriptionHtml =
+          '<div class="crsl-lb__product-desc">' +
+            descriptionParagraphs.map(function (paragraph) {
+              return '<p class="crsl-lb__product-desc-p">' + esc(paragraph) + '</p>';
+            }).join('') +
+          '</div>';
+      }
+
       productPane =
         '<aside class="crsl-lb__product-pane">' +
           '<div class="crsl-lb__product-card">' +
@@ -49,6 +84,7 @@
               '<span class="crsl-lb__price">' + esc(normalizePrice(linked.price)) + '</span>' +
               (linked.compareAtPrice ? '<span class="crsl-lb__compare">' + esc(normalizePrice(linked.compareAtPrice)) + '</span>' : '') +
             '</div>' +
+            descriptionHtml +
             '<div class="crsl-lb__actions">' +
               '<button type="button" class="crsl-lb__add-btn" data-handle="' + esc(linked.handle) + '">ADD TO CART</button>' +
               '<a class="crsl-lb__shop-btn" href="' + esc(linked.url || '/collections/all') + '">SHOP NOW</a>' +

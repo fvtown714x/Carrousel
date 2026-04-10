@@ -347,7 +347,7 @@
 .crsl-lb__product-card {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   width: 100%;
 }
 
@@ -390,11 +390,28 @@
   text-decoration: line-through;
 }
 
+.crsl-lb__product-desc {
+  color: #3a3a3a;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.crsl-lb__product-desc-p {
+  display: -webkit-box;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  margin: 0;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .crsl-lb__actions {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: auto;
+  margin-top: 6px;
 }
 
 .crsl-lb__add-btn {
