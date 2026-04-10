@@ -48,20 +48,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     await ensurePlaylistMetaTable();
     const tags = parseProductTags(rawProductTags);
 
-    await prisma.$executeRawUnsafe(
-      `
+    await prisma.$executeRaw`
       INSERT INTO playlist_meta (playlistId, description, productTags, updatedAt)
-      VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+      VALUES (${playlist.id}, ${description || null}, ${JSON.stringify(tags)}, CURRENT_TIMESTAMP)
       ON CONFLICT(playlistId)
       DO UPDATE SET
         description = excluded.description,
         productTags = excluded.productTags,
         updatedAt = CURRENT_TIMESTAMP
-      `,
-      playlist.id,
-      description || null,
-      JSON.stringify(tags)
-    );
+    `;
 
     return Response.json({ success: true, playlistId: playlist.id });
   } catch (error) {

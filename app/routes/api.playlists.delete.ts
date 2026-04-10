@@ -44,7 +44,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     await prisma.playlistVideo.deleteMany({ where: { playlistId } });
     await prisma.playlist.delete({ where: { id: playlistId } });
-    await prisma.$executeRawUnsafe(`DELETE FROM playlist_meta WHERE playlistId = ?`, playlistId);
+    await prisma.$executeRaw`DELETE FROM playlist_meta WHERE playlistId = ${playlistId}`;
 
     return Response.json({ success: true });
   } catch (error) {
