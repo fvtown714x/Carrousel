@@ -26,8 +26,21 @@
     return String(value).replace(/^([A-Z]{3})\s+/, '$1 ');
   }
 
+  function stripHtml(value) {
+    return String(value || '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function splitSentences(text) {
+    var matches = String(text || '').match(/[^.!?]+[.!?]?/g);
+    if (!matches) return [];
+    return matches.map(function (part) { return part.trim(); }).filter(Boolean);
+  }
+
   function getDescriptionParagraphs(value) {
-    var text = String(value || '').replace(/\r/g, '\n').trim();
+    var text = stripHtml(String(value || '').replace(/\r/g, '\n'));
     if (!text) return [];
 
     var blocks = text
@@ -37,10 +50,7 @@
 
     if (blocks.length >= 2) return blocks.slice(0, 2);
     if (blocks.length === 1) {
-      var splitBySentence = blocks[0]
-        .split(/(?<=[.!?])\s+/)
-        .map(function (part) { return part.trim(); })
-        .filter(Boolean);
+      var splitBySentence = splitSentences(blocks[0]);
 
       if (splitBySentence.length >= 2) {
         return [splitBySentence[0], splitBySentence[1]];
@@ -48,6 +58,28 @@
     }
 
     return blocks.slice(0, 1);
+  }
+
+  function renderDescription(container, paragraphs) {
+    if (!container) return;
+    container.innerHTML = (paragraphs || []).map(function (paragraph) {
+      return '<p class="crsl-lb__product-desc-p">' + esc(paragraph) + '</p>';
+    }).join('');
+    container.style.display = (paragraphs && paragraphs.length > 0) ? '' : 'none';
+  }
+
+  async function hydrateProductDescription(handle, container) {
+    if (!handle || !container) return;
+    try {
+      var response = await fetch('/products/' + encodeURIComponent(handle) + '.js');
+      if (!response.ok) return;
+      var payload = await response.json();
+      var source = payload && (payload.description || payload.body_html || payload.bodyHtml || '');
+      var paragraphs = getDescriptionParagraphs(source);
+      renderDescription(container, paragraphs);
+    } catch (_) {
+      // Keep modal clean even if product endpoint is unavailable.
+    }
   }
 
   function openLightbox(item) {
@@ -62,16 +94,8 @@
     var productPane = '';
 
     if (linked) {
-      var descriptionHtml = '';
       var descriptionParagraphs = getDescriptionParagraphs(linked.description || '');
-      if (descriptionParagraphs.length > 0) {
-        descriptionHtml =
-          '<div class="crsl-lb__product-desc">' +
-            descriptionParagraphs.map(function (paragraph) {
-              return '<p class="crsl-lb__product-desc-p">' + esc(paragraph) + '</p>';
-            }).join('') +
-          '</div>';
-      }
+      var descriptionHtml = '<div class="crsl-lb__product-desc" data-product-desc></div>';
 
       productPane =
         '<aside class="crsl-lb__product-pane">' +
@@ -121,6 +145,15 @@
       '</div>';
 
     document.body.appendChild(_lb);
+
+    if (linked) {
+      var descContainer = _lb.querySelector('[data-product-desc]');
+      var initialParagraphs = getDescriptionParagraphs(linked.description || '');
+      renderDescription(descContainer, initialParagraphs);
+      if (initialParagraphs.length === 0 && linked.handle) {
+        hydrateProductDescription(linked.handle, descContainer);
+      }
+    }
 
     var vid = _lb.querySelector('.crsl-lb__video');
     if (vid && vid.tagName === 'VIDEO') {
