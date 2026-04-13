@@ -398,13 +398,16 @@
 }
 
 .crsl-lb__product-desc-p {
-  display: -webkit-box;
   font-size: 0.9rem;
   line-height: 1.35;
   margin: 0;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+}
+
+.crsl-lb__product-desc-link {
+  color: #111;
+  font-weight: 700;
+  margin-left: 2px;
+  text-decoration: underline;
 }
 
 .crsl-lb__actions {

@@ -48,44 +48,55 @@
     return matches.map(function (part) { return part.trim(); }).filter(Boolean);
   }
 
-  function getDescriptionParagraphs(value) {
+  function getDescriptionPreview(value, limit) {
     var text = stripHtml(String(value || '').replace(/\r/g, '\n'));
-    if (!text) return [];
+    var normalized = splitSentences(text).join(' ').trim() || text;
+    if (!normalized) return '';
+    return normalized.slice(0, limit).trim();
+  }
 
-    var blocks = text
-      .split(/\n{2,}/)
-      .map(function (part) { return part.trim(); })
-      .filter(Boolean);
-
-    if (blocks.length >= 2) return blocks.slice(0, 2);
-    if (blocks.length === 1) {
-      var splitBySentence = splitSentences(blocks[0]);
-
-      if (splitBySentence.length >= 2) {
-        return [splitBySentence[0], splitBySentence[1]];
-      }
+  function renderDescription(container, previewText, productUrl) {
+    if (!container) return;
+    if (!previewText) {
+      container.innerHTML = '';
+      container.style.display = 'none';
+      return;
     }
 
-    return blocks.slice(0, 1);
+    container.innerHTML =
+      '<p class="crsl-lb__product-desc-p">' +
+        esc(previewText) +
+        '<a class="crsl-lb__product-desc-link" href="' + esc(productUrl || '/collections/all') + '">...read more.</a>' +
+      '</p>';
+    container.style.display = '';
   }
 
-  function renderDescription(container, paragraphs) {
-    if (!container) return;
-    container.innerHTML = (paragraphs || []).map(function (paragraph) {
-      return '<p class="crsl-lb__product-desc-p">' + esc(paragraph) + '</p>';
-    }).join('');
-    container.style.display = (paragraphs && paragraphs.length > 0) ? '' : 'none';
-  }
-
-  async function hydrateProductDescription(handle, container) {
+  async function hydrateProductDescription(handle, productUrl, container) {
     if (!handle || !container) return;
     try {
       var response = await fetch('/products/' + encodeURIComponent(handle) + '.js');
-      if (!response.ok) return;
-      var payload = await response.json();
-      var source = payload && (payload.description || payload.body_html || payload.bodyHtml || '');
-      var paragraphs = getDescriptionParagraphs(source);
-      renderDescription(container, paragraphs);
+      if (response.ok) {
+        var payload = await response.json();
+        var jsSource = payload && (payload.description || payload.body_html || payload.bodyHtml || '');
+        var jsPreview = getDescriptionPreview(jsSource, 20);
+        if (jsPreview) {
+          renderDescription(container, jsPreview, productUrl);
+          return;
+        }
+      }
+    } catch (_) {
+      // Try HTML fallback below.
+    }
+
+    try {
+      var htmlResponse = await fetch(productUrl || ('/products/' + encodeURIComponent(handle)));
+      if (!htmlResponse.ok) return;
+      var html = await htmlResponse.text();
+      var metaMatch =
+        html.match(/<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']*)["']/i) ||
+        html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i);
+      var htmlPreview = getDescriptionPreview(metaMatch && metaMatch[1] ? metaMatch[1] : '', 20);
+      renderDescription(container, htmlPreview, productUrl);
     } catch (_) {
       // Keep modal clean even if product endpoint is unavailable.
     }
@@ -103,7 +114,6 @@
     var productPane = '';
 
     if (linked) {
-      var descriptionParagraphs = getDescriptionParagraphs(linked.description || '');
       var descriptionHtml = '<div class="crsl-lb__product-desc" data-product-desc></div>';
 
       productPane =
@@ -157,10 +167,10 @@
 
     if (linked) {
       var descContainer = _lb.querySelector('[data-product-desc]');
-      var initialParagraphs = getDescriptionParagraphs(linked.description || '');
-      renderDescription(descContainer, initialParagraphs);
-      if (initialParagraphs.length === 0 && linked.handle) {
-        hydrateProductDescription(linked.handle, descContainer);
+      var initialPreview = getDescriptionPreview(linked.description || '', 20);
+      renderDescription(descContainer, initialPreview, linked.url || '/collections/all');
+      if (!initialPreview && linked.handle) {
+        hydrateProductDescription(linked.handle, linked.url || ('/products/' + linked.handle), descContainer);
       }
     }
 
