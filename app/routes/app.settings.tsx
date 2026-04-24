@@ -60,6 +60,8 @@ export default function SettingsPage() {
         <div
           style={{
             display: "inline-flex",
+            alignSelf: "flex-start",
+            width: "fit-content",
             border: "1px solid #a8a8a8",
             borderRadius: 8,
             overflow: "hidden",
@@ -76,10 +78,12 @@ export default function SettingsPage() {
                 borderRight: index < tabs.length - 1 ? "1px solid #a8a8a8" : "none",
                 background: selectedTab === index ? "#bfc2c7" : "#d9d9d9",
                 color: "#111827",
-                fontSize: 18,
+                width: "auto",
+                flex: "0 0 auto",
+                fontSize: 16,
                 fontWeight: 500,
-                lineHeight: "24px",
-                padding: "10px 22px",
+                lineHeight: "20px",
+                padding: "8px 16px",
                 cursor: "pointer",
               }}
             >
