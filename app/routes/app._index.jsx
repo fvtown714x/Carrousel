@@ -80,6 +80,8 @@ export const loader = async () => {
           eventType: true,
           cartToken: true,
           productId: true,
+          orderId: true,
+          metadata: true,
         },
         orderBy: { createdAt: "desc" },
         take: 5000,
@@ -120,7 +122,36 @@ export const loader = async () => {
   const attributedOrderIds = new Set();
   let totalAttributedRevenue = 0;
 
-  const interactionsByCartToken = interactions.reduce((acc, event) => {
+  for (const event of interactions) {
+    if (event.eventType !== "ORDER_ATTRIBUTED") continue;
+    const orderId = event.orderId ? String(event.orderId) : null;
+    if (!orderId) continue;
+    attributedOrderIds.add(orderId);
+    const attributedRevenue = Number(event?.metadata?.attributedRevenue || 0);
+    totalAttributedRevenue += attributedRevenue;
+
+    if (event.videoId) {
+      if (!videoMetricsMap.has(event.videoId)) {
+        videoMetricsMap.set(event.videoId, { orders: 0, revenue: 0, tagTaps: 0, atcClicks: 0, plays: 0 });
+      }
+      const metric = videoMetricsMap.get(event.videoId);
+      metric.orders += 1;
+      metric.revenue += attributedRevenue;
+    }
+
+    if (event.productId) {
+      if (!productMetricsMap.has(event.productId)) {
+        productMetricsMap.set(event.productId, { orders: 0, revenue: 0, tagTaps: 0, atcClicks: 0 });
+      }
+      const metric = productMetricsMap.get(event.productId);
+      metric.orders += 1;
+      metric.revenue += attributedRevenue;
+    }
+  }
+
+  const interactionsByCartToken = interactions
+    .filter((event) => event.eventType !== "ORDER_ATTRIBUTED")
+    .reduce((acc, event) => {
     if (!event.cartToken) return acc;
     if (!acc.has(event.cartToken)) acc.set(event.cartToken, []);
     acc.get(event.cartToken).push(event);
@@ -132,8 +163,10 @@ export const loader = async () => {
     if (!order) continue;
     const orderId = String(order.id);
     const orderRevenue = Number(order.current_total_price || 0);
-    attributedOrderIds.add(orderId);
-    totalAttributedRevenue += orderRevenue;
+    if (!attributedOrderIds.has(orderId)) {
+      attributedOrderIds.add(orderId);
+      totalAttributedRevenue += orderRevenue;
+    }
 
     const touchedVideoIds = Array.from(new Set(events.map((event) => event.videoId).filter(Boolean)));
     const touchedProductIds = Array.from(new Set(events.map((event) => event.productId).filter(Boolean)));
@@ -399,9 +432,9 @@ export default function Index() {
 
   const stepItems = [
     {
-      title: "Install VinciTool's App",
+      title: "Install Vince Shoppable Videos",
       description:
-        "Complete the installation process and set up your VinciTool's account to start creating engaging content.",
+        "Complete the installation process and set up your Vince Shoppable Videos account to start creating engaging content.",
       done: onboarding.appInstalled,
       ctaLabel: "Open Settings",
       href: "/app/settings",
@@ -432,7 +465,7 @@ export default function Index() {
   return (
     <Page
       title="Dashboard"
-      subtitle="Welcome to VinciTool's"
+      subtitle="Welcome to Vince Shoppable Videos"
       primaryAction={{ content: "Open Products", url: "shopify://admin/products", target: "_top" }}
       secondaryActions={[{ content: "Open Customers", url: "shopify://admin/customers", target: "_top" }]}
     >
@@ -732,9 +765,11 @@ export default function Index() {
                               {step.description}
                             </Text>
                             <InlineStack>
-                              <Button url={step.href} variant={step.done ? "secondary" : "primary"}>
-                                {step.done ? "Open" : step.ctaLabel}
-                              </Button>
+                              {index === 0 ? null : (
+                                <Button url={step.href} variant={step.done ? "secondary" : "primary"}>
+                                  {step.done ? "Open" : step.ctaLabel}
+                                </Button>
+                              )}
                             </InlineStack>
                           </BlockStack>
                         ) : null}
