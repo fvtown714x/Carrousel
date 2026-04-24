@@ -36,6 +36,7 @@ model Shop {
 
   videos        Video[]
   playlists     Playlist[]
+  interactions  VideoInteractionEvent[]
   themeSettings ThemeSettings?
   subscription  BillingSubscription?
   usage         UsageMetrics?
@@ -69,6 +70,7 @@ model Video {
   assets      VideoAsset[]
   productTags VideoProductTag[]
   analytics   VideoAnalytics?
+  events      VideoInteractionEvent[]
 
   playlists PlaylistVideo[]
 
@@ -151,6 +153,33 @@ model VideoAnalytics {
   updatedAt DateTime @updatedAt
 }
 
+model VideoInteractionEvent {
+  id String @id @default(cuid())
+
+  shopId String
+  shop   Shop   @relation(fields: [shopId], references: [id])
+
+  videoId String?
+  video   Video? @relation(fields: [videoId], references: [id])
+
+  eventType InteractionEventType
+  sessionId String
+  cartToken String?
+
+  playlistId   String?
+  playlistName String?
+  productId    String?
+  orderId      String?
+  metadata     Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([shopId, createdAt])
+  @@index([shopId, cartToken])
+  @@index([shopId, sessionId])
+  @@index([videoId, createdAt])
+}
+
 ////////////////////
 // THEME CUSTOMIZATION
 ////////////////////
@@ -224,4 +253,11 @@ enum SubscriptionStatus {
   ACTIVE
   PAUSED
   CANCELLED
+}
+
+enum InteractionEventType {
+  PLAY
+  TAG_TAP
+  ADD_TO_CART
+  ORDER_ATTRIBUTED
 }

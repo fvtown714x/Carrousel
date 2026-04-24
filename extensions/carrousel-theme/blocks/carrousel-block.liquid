@@ -21,7 +21,11 @@
   data-carrousel-block
   data-block-id="{{ block.id }}"
   data-endpoint="https://{{ shop.permanent_domain }}/apps/carrousel"
+  data-track-endpoint="https://{{ shop.permanent_domain }}/apps/carrousel/track"
   data-heading="{{ block.settings.heading | escape }}"
+  data-heading-size="{{ block.settings.heading_size }}px"
+  data-heading-align="{{ block.settings.heading_align }}"
+  data-layout="{{ block.settings.layout }}"
   data-source="{{ block.settings.media_source | escape }}"
   data-playlist="{{ block.settings.playlist_name | escape }}"
   data-product-id="{{ resolved_product_id }}"
@@ -162,17 +166,36 @@
       "default": "#111827"
     },
     {
+      "type": "range",
+      "id": "heading_size",
+      "label": "Heading size",
+      "min": 18,
+      "max": 48,
+      "step": 1,
+      "unit": "px",
+      "default": 28
+    },
+    {
       "type": "select",
-      "id": "font_family",
-      "label": "Font family",
-      "default": "body",
+      "id": "heading_align",
+      "label": "Heading alignment",
+      "default": "center",
       "options": [
-        { "value": "body", "label": "Theme body font" },
-        { "value": "heading", "label": "Theme heading font" },
-        { "value": "serif", "label": "Serif" },
-        { "value": "mono", "label": "Monospace" }
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
       ]
-    }
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "default": "layout1",
+      "options": [
+        { "value": "layout1", "label": "Layout 1: Central focus" },
+        { "value": "layout2", "label": "Layout 2: All autoplay" }
+      ]
+    },
   ]
 }
 {% endschema %}
