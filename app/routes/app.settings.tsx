@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useLoaderData } from "react-router";
-import { Badge, BlockStack, Button, Card, InlineGrid, InlineStack, Page, Select, Text } from "@shopify/polaris";
+import { Badge, BlockStack, Button, Card, InlineGrid, InlineStack, Page, Select, Tabs, Text } from "@shopify/polaris";
 import prisma from "../db.server";
 import { requireShopDev } from "../utils/requireShopDev.server";
 
@@ -57,40 +57,7 @@ export default function SettingsPage() {
           </Button>
         </InlineStack>
 
-        <div
-          style={{
-            display: "inline-flex",
-            alignSelf: "flex-start",
-            width: "fit-content",
-            border: "1px solid #a8a8a8",
-            borderRadius: 8,
-            overflow: "hidden",
-            background: "#d9d9d9",
-          }}
-        >
-          {tabs.map((tab, index) => (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setSelectedTab(index)}
-              style={{
-                border: "none",
-                borderRight: index < tabs.length - 1 ? "1px solid #a8a8a8" : "none",
-                background: selectedTab === index ? "#bfc2c7" : "#d9d9d9",
-                color: "#111827",
-                width: "auto",
-                flex: "0 0 auto",
-                fontSize: 16,
-                fontWeight: 500,
-                lineHeight: "20px",
-                padding: "8px 16px",
-                cursor: "pointer",
-              }}
-            >
-              {tab.content}
-            </button>
-          ))}
-        </div>
+        <Tabs tabs={tabs} selected={selectedTab} onSelect={setSelectedTab} />
 
         <Card>
           <InlineStack align="space-between" blockAlign="center">
