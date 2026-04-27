@@ -194,26 +194,9 @@
       );
     }
 
-    function renderSideCard(item, index) {
-      if (!item) return '';
-      var mediaHtml = item.type === 'VIDEO'
-        ? '<video class="crsl-lb__side-card__media" src="' + esc(item.url || '') + '" muted loop playsinline preload="metadata"></video>'
-        : '<img class="crsl-lb__side-card__media" src="' + esc(item.thumbnail || item.url || '') + '" alt="' + esc(item.title) + '">';
-
-      return (
-        '<button type="button" class="crsl-lb__side-card" data-side-idx="' + index + '" aria-label="' + esc(item.title) + '">' +
-          '<div class="crsl-lb__side-card__media-wrap">' + mediaHtml + '</div>' +
-          '<div class="crsl-lb__side-card__meta">' +
-            '<span>' + esc(item.title) + '</span>' +
-          '</div>' +
-        '</button>'
-      );
-    }
-
     function updateLightbox() {
       var item = items[activeIndex];
       var mediaWrap = _lb.querySelector('[data-lightbox-media]');
-      var sidePanel = _lb.querySelector('[data-lightbox-sides]');
       var productPane = _lb.querySelector('[data-lightbox-product]');
       var overlayTitle = '<div class="crsl-lb__overlay">' +
           '<div class="crsl-lb__overlay-top">' +
@@ -230,14 +213,7 @@
           '</div>' +
         '</div>';
 
-      var prevIndex = items.length > 1 ? (activeIndex - 1 + items.length) % items.length : null;
-      var nextIndex = items.length > 1 ? (activeIndex + 1) % items.length : null;
-
-      mediaWrap.innerHTML = renderMedia(item) + overlayTitle +
-        '<div class="crsl-lb__side-panel" data-lightbox-sides>' +
-          renderSideCard(items[prevIndex], prevIndex) +
-          renderSideCard(items[nextIndex], nextIndex) +
-        '</div>';
+      mediaWrap.innerHTML = renderMedia(item) + overlayTitle;
       productPane.innerHTML = renderProductPane(item).replace(/^(<aside[^>]*>)([\s\S]*)(<\/aside>)$/, '$2');
 
       if (item.linkedProduct) {
@@ -277,27 +253,6 @@
     _lb.addEventListener('click', function (event) {
       if (event.target.closest('.crsl-lb__close-btn') || event.target.closest('.crsl-lb__backdrop')) {
         closeLightbox();
-        return;
-      }
-
-      var sideCard = event.target.closest('.crsl-lb__side-card');
-      if (sideCard) {
-        var nextIndex = parseInt(sideCard.dataset.sideIdx, 10);
-        if (!Number.isNaN(nextIndex) && nextIndex !== activeIndex) {
-          activeIndex = nextIndex;
-          updateLightbox();
-        }
-        return;
-      }
-
-      if (event.target.closest('.crsl-lb__arrow-btn')) {
-        var direction = event.target.closest('.crsl-lb__arrow-btn').dataset.direction;
-        if (direction === 'prev') {
-          activeIndex = (activeIndex - 1 + items.length) % items.length;
-        } else {
-          activeIndex = (activeIndex + 1) % items.length;
-        }
-        updateLightbox();
         return;
       }
 

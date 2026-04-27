@@ -1,7 +1,95 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import type { LoaderFunctionArgs } from "react-router";
+import { useLoaderData } from "react-router";
 import { Banner, BlockStack, Button, Card, Modal, Page } from "@shopify/polaris";
 import { getEmbeddedHeaders } from "../utils/embedded-auth.client";
+import { authenticate } from "../shopify.server";
+import { requireShopDev } from "../utils/requireShopDev.server";
+
+type TemplateName = "product" | "index" | "collection";
+
+function containsCarrouselBlock(content: string | undefined) {
+  if (!content) return false;
+  return content.includes("/blocks/carrousel-block/") || content.includes("carrousel-block");
+}
+
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  let hasWidgetInstalled = false;
+
+  try {
+    const { admin } = await authenticate.admin(request);
+    const response = await admin.graphql(`
+      query PlaylistThemeCheck {
+        themes(first: 20) {
+          nodes {
+            id
+            role
+          }
+        }
+      }
+    `);
+
+    const payload = (await response.json()) as {
+      data?: { themes?: { nodes?: Array<{ id: string; role: string }> } };
+    };
+    const mainTheme = payload?.data?.themes?.nodes?.find((theme) => theme.role === "MAIN");
+
+    if (mainTheme) {
+      const filesResponse = await admin.graphql(
+        `
+          query ThemeFiles($id: ID!, $filenames: [String!]) {
+            theme(id: $id) {
+              files(first: 10, filenames: $filenames) {
+                nodes {
+                  filename
+                  body {
+                    ... on OnlineStoreThemeFileBodyText {
+                      content
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `,
+        {
+          variables: {
+            id: mainTheme.id,
+            filenames: [
+              "templates/product.json",
+              "templates/index.json",
+              "templates/collection.json",
+            ] satisfies string[],
+          },
+        },
+      );
+
+      const filesPayload = (await filesResponse.json()) as {
+        data?: {
+          theme?: {
+            files?: {
+              nodes?: Array<{ filename: string; body?: { content?: string } | null }>;
+            };
+          };
+        };
+      };
+
+      const templates: TemplateName[] = ["product", "index", "collection"];
+      hasWidgetInstalled = templates.some((template) => {
+        const filename = `templates/${template}.json`;
+        const match = filesPayload?.data?.theme?.files?.nodes?.find((node) => node.filename === filename);
+        return containsCarrouselBlock(match?.body?.content);
+      });
+    }
+  } catch (error) {
+    console.warn("[playlists] failed to evaluate theme block installation", error);
+    const { shop } = await requireShopDev();
+    hasWidgetInstalled = !!(await Promise.resolve(shop?.id));
+  }
+
+  return { hasWidgetInstalled };
+};
 
 type XhrRequestParams = {
   url: string;
@@ -103,6 +191,7 @@ async function requestJsonWithFallback({
 }
 
 export default function PlaylistsPage() {
+  const { hasWidgetInstalled } = useLoaderData<typeof loader>();
   const [playlists, setPlaylists] = useState<PlaylistItem[]>([]);
   const [expandedIds, setExpandedIds] = useState<string[]>([]);
   const [openCreateModal, setOpenCreateModal] = useState(false);
@@ -388,18 +477,20 @@ export default function PlaylistsPage() {
         <Card>
           <div style={{ margin: "0 auto", maxWidth: "980px", padding: "8px 12px 24px" }}>
             <div style={{ alignItems: "center", display: "flex", gap: "10px", paddingTop: "4px" }}>
-            <ToolbarButton variant="secondary">How to Add Widgets</ToolbarButton>
+            <ToolbarButton variant="secondary">How to Add in Theme Editor</ToolbarButton>
             <ToolbarButton variant="primary" onClick={openCreate}>+ Create Playlist</ToolbarButton>
           </div>
 
 
-        <div style={{ marginTop: "22px" }}>
-          <Banner tone="warning" title="Your playlists are not visible on your store yet">
-            <p style={{ margin: 0 }}>
-              You've created playlists, but you haven't added any widgets to your store pages. Go to the Widgets page to add them.
-            </p>
-          </Banner>
-        </div>
+        {!hasWidgetInstalled && playlists.length > 0 ? (
+          <div style={{ marginTop: "22px" }}>
+            <Banner tone="warning" title="Your playlists are not visible on your store yet">
+              <p style={{ margin: 0 }}>
+                You&apos;ve created playlists, but you haven&apos;t added the app block in your Theme Editor yet.
+              </p>
+            </Banner>
+          </div>
+        ) : null}
 
             {error && (
               <div style={{ marginTop: "12px" }}>

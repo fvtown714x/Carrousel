@@ -83,11 +83,11 @@ export default function Index() {
       href: "/app/playlists",
     },
     {
-      title: "Show Playlists on Pages",
-      description: "Complete your widget setup so playlists appear on your store pages.",
+      title: "Show Playlists on Store Pages",
+      description: "Complete setup in the Theme Editor so playlists appear on your store pages.",
       done: onboarding.playlistEmbedded,
-      ctaLabel: "Open Widgets",
-      href: "/app/widgets",
+      ctaLabel: "Open Settings",
+      href: "/app/settings",
     },
   ];
 
@@ -169,9 +169,9 @@ export default function Index() {
           <Banner
             tone="info"
             title="Finish setup to unlock full analytics"
-            action={{ content: "Go to Widgets", url: "/app/widgets" }}
+            action={{ content: "Go to Settings", url: "/app/settings" }}
           >
-            <p>Publish your widgets and playlists to start tracking engagement and conversions.</p>
+            <p>Configure your Theme Editor setup and playlists to start tracking engagement and conversions.</p>
           </Banner>
         ) : null}
       </BlockStack>
