@@ -31,6 +31,7 @@ export default function AppLayout() {
           <a href="/app" rel="home">
             Dashboard
           </a>
+          <a href="/app/analytics">Analytics</a>
           <a href="/app/library">Media</a>
           <a href="/app/playlists">Playlists</a>
           <a href="/app/widgets">Widgets</a>
